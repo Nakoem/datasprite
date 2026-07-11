@@ -60,8 +60,10 @@ class DBInfoState(TypedDict):
     version: str
 
 
-class DataAgentState(TypedDict):
-    """一次问数链路中的核心状态"""
+class DataAgentState(TypedDict, total=False):
+    """一次问数链路中的核心状态
+    注意：初始状态只包含 query 和 correct_retry_count，
+    其余字段由各节点在流程中逐步写入。"""
 
     query: str  # 用户输入的查询
     keywords: list[str]  # 抽取的关键词
@@ -77,3 +79,5 @@ class DataAgentState(TypedDict):
     sql: str  # 生成或校正后的SQL
 
     error: str  # 校验SQL时出现的错误信息
+
+    correct_retry_count: int  # SQL修正重试次数，每轮correct_sql后+1

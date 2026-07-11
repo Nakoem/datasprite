@@ -1,9 +1,12 @@
 """
 SQL 校验节点
 
-负责在真正执行查询前，用数据库解析一次生成的 SQ
+负责在真正执行查询前，用数据库解析一次生成的 SQL
 校验结果不在这里决定流程走向，而是通过 state["error"] 交给 graph.py 的条件边判断
+只有 SQL 语法/语义错误才会写入 error 触发修正流程，基础设施错误直接抛出
 """
+
+import re
 
 from langgraph.runtime import Runtime
 
@@ -11,6 +14,20 @@ from app.agent.context import DataAgentContext
 from app.agent.state import DataAgentState
 from app.core.log import logger
 from app.repositories.mysql.dw.dw_mysql_repository import DWMySQLRepository
+
+# MySQL 基础设施错误的典型关键词，这类错误不应交给 LLM 修正
+_INFRA_ERROR_PATTERNS = [
+    r"connection refused",
+    r"connection timeout",
+    r"too many connections",
+    r"access denied",
+    r"can't connect",
+    r"lost connection",
+    r"server has gone away",
+    r"connection reset",
+    r"no route to host",
+    r"unknown mysql server host",
+]
 
 
 async def validate_sql(state: DataAgentState, runtime: Runtime[DataAgentContext]):
@@ -34,9 +51,15 @@ async def validate_sql(state: DataAgentState, runtime: Runtime[DataAgentContext]
             logger.info("SQL语法正确")
             return {"error": None}
         except Exception as e:
-            # 不抛出异常中断图执行，而是把错误写入状态，供条件分支进入 correct_sql
+            error_str = str(e).lower()
+            # 基础设施错误（断连、超时等）不应交给 LLM 修正，直接抛出
+            if any(re.search(pattern, error_str) for pattern in _INFRA_ERROR_PATTERNS):
+                logger.error(f"校验阶段基础设施错误：{error_str}")
+                writer({"type": "progress", "step": step, "status": "error"})
+                raise
+            # SQL 语法/语义错误写入 state，供条件分支进入 correct_sql
             logger.info(f"SQL语法错误：{str(e)}")
-            writer({"type": "progress", "step": step, "status": "success"})
+            writer({"type": "progress", "step": step, "status": "retry"})
             return {"error": str(e)}
 
     except Exception as e:

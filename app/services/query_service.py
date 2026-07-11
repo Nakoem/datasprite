@@ -46,7 +46,7 @@ class QueryService:
         """执行一次问数工作流，并逐段产出 SSE 消息"""
 
         # State 只放会被图节点读写和合并的业务数据，外部工具对象不塞进 State
-        state = DataAgentState(query=query)
+        state = DataAgentState(query=query, correct_retry_count=0)
         # Context 保存本次图执行需要复用的外部依赖，节点通过 runtime.context 读取
         context = DataAgentContext(
             column_qdrant_repository=self.column_qdrant_repository,

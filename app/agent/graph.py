@@ -39,6 +39,9 @@ from app.repositories.mysql.meta.meta_mysql_repository import MetaMySQLRepositor
 from app.repositories.qdrant.column_qdrant_repository import ColumnQdrantRepository
 from app.repositories.qdrant.metric_qdrant_repository import MetricQdrantRepository
 
+# SQL 修正最大重试次数，超过后不再修正直接尝试执行
+MAX_CORRECT_RETRIES = 3
+
 # StateGraph 声明整张图使用的状态结构和运行时上下文结构
 graph_builder = StateGraph(state_schema=DataAgentState, context_schema=DataAgentContext)
 
@@ -79,13 +82,24 @@ graph_builder.add_edge("filter_metric", "add_extra_context")
 graph_builder.add_edge("add_extra_context", "generate_sql")
 graph_builder.add_edge("generate_sql", "validate_sql")
 
-# SQL 校验通过就直接执行，校验失败则先进入修正节点
+# SQL 校验通过 → 直接执行
+# 校验失败 + 未超重试上限 → 进入修正节点
+# 校验失败 + 已超重试上限 → 放弃修正，直接尝试执行（让 run_sql 报错给用户）
 graph_builder.add_conditional_edges(
     source="validate_sql",
-    path=lambda state: "run_sql" if state["error"] is None else "correct_sql",
+    path=lambda state: (
+        "run_sql"
+        if state["error"] is None
+        else (
+            "correct_sql"
+            if state.get("correct_retry_count", 0) < MAX_CORRECT_RETRIES
+            else "run_sql"
+        )
+    ),
     path_map={"run_sql": "run_sql", "correct_sql": "correct_sql"},
 )
-graph_builder.add_edge("correct_sql", "run_sql")
+# 修正后回到校验节点重新 EXPLAIN，形成闭环
+graph_builder.add_edge("correct_sql", "validate_sql")
 graph_builder.add_edge("run_sql", END)
 
 # 编译后的 graph 是对外使用的 Agent 执行入口
@@ -123,7 +137,7 @@ if __name__ == "__main__":
             value_es_repository = ValueESRepository(es_client_manager.client)
 
             # 当前只需要传入原始问题，后续节点会逐步写回召回、过滤和额外上下文结果
-            state = DataAgentState(query="统计华北地区的销售总额")
+            state = DataAgentState(query="统计华北地区的销售总额", correct_retry_count=0)
             context = DataAgentContext(
                 column_qdrant_repository=column_qdrant_repository,
                 embedding_client=embedding_client_manager.client,
