@@ -35,12 +35,13 @@ class ValueESRepository:
     def __init__(self, client: AsyncElasticsearch):
         self.client = client
 
-    async def ensure_index(self):
-        """确保字段取值索引已经创建好"""
-        if not await self.client.indices.exists(index=self.index_name):
-            await self.client.indices.create(
-                index=self.index_name, mappings=self.index_mappings
-            )
+    async def recreate_index(self):
+        """先删后建字段取值索引，保证重复构建时不残留已删除的旧取值"""
+        if await self.client.indices.exists(index=self.index_name):
+            await self.client.indices.delete(index=self.index_name)
+        await self.client.indices.create(
+            index=self.index_name, mappings=self.index_mappings
+        )
 
     async def index(self, value_infos: list[ValueInfo], batch_size=20):
         """分批写入字段取值，避免一次 bulk 过大"""

@@ -93,6 +93,8 @@ class MetaKnowledgeService:
                 column_infos.append(column_info)
 
         async with self.meta_mysql_repository.session.begin():
+            # 重建前先清空旧的表和字段元数据，保证脚本可重复执行不撞主键
+            await self.meta_mysql_repository.clear_table_and_column_infos()
             self.meta_mysql_repository.save_table_infos(table_infos)
             self.meta_mysql_repository.save_column_infos(column_infos)
 
@@ -100,7 +102,7 @@ class MetaKnowledgeService:
 
     async def _save_column_info_to_qdrant(self, column_infos: list[ColumnInfo]):
         """把字段元数据继续推进成可语义检索的 Qdrant 向量点"""
-        await self.column_qdrant_repository.ensure_collection()
+        await self.column_qdrant_repository.recreate_collection()
 
         points: list[dict] = []
         for column_info in column_infos:
@@ -151,7 +153,7 @@ class MetaKnowledgeService:
         self, meta_config: MetaConfig, column_infos: list[ColumnInfo]
     ):
         """把允许同步的字段真实取值写入 Elasticsearch 全文索引"""
-        await self.value_es_repository.ensure_index()
+        await self.value_es_repository.recreate_index()
 
         # 不是所有字段都要同步真实值，是否同步由配置里的 sync 显式控制
         column2sync: dict[str, bool] = {}
@@ -205,6 +207,8 @@ class MetaKnowledgeService:
 
         # 指标本身和字段关系要放在同一笔事务里，避免只写入其中一部分
         async with self.meta_mysql_repository.session.begin():
+            # 重建前先清空旧的指标和字段关联，保证脚本可重复执行
+            await self.meta_mysql_repository.clear_metric_infos()
             self.meta_mysql_repository.save_metric_infos(metric_infos)
             self.meta_mysql_repository.save_column_metrics(column_metrics)
 
@@ -212,7 +216,7 @@ class MetaKnowledgeService:
 
     async def _save_metrics_to_qdrant(self, metric_infos: list[MetricInfo]):
         """把指标元数据继续推进成可语义检索的 Qdrant 向量点"""
-        await self.metric_qdrant_repository.ensure_collection()
+        await self.metric_qdrant_repository.recreate_collection()
 
         points: list[dict] = []
         for metric_info in metric_infos:

@@ -51,6 +51,7 @@ speed-measure-plugin*.json
 npm-debug.log
 yarn-error.log
 testem.log
+*.log
 /typings
 
 # System

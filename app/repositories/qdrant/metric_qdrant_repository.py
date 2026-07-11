@@ -22,17 +22,17 @@ class MetricQdrantRepository:
     def __init__(self, client: AsyncQdrantClient):
         self.client = client
 
-    async def ensure_collection(self):
-        """确保指标向量集合存在，并按当前 Embedding 维度初始化"""
-        if not await self.client.collection_exists(self.collection_name):
-            await self.client.create_collection(
-                collection_name=self.collection_name,
-                vectors_config=VectorParams(
-                    # 向量维度必须和 Embedding 模型输出一致，否则写入时会失败
-                    size=app_config.qdrant.embedding_size,
-                    distance=Distance.COSINE,
-                ),
-            )
+    async def recreate_collection(self):
+        """先删后建指标向量集合，保证重复构建时不残留旧向量点"""
+        if await self.client.collection_exists(self.collection_name):
+            await self.client.delete_collection(self.collection_name)
+        await self.client.create_collection(
+            collection_name=self.collection_name,
+            vectors_config=VectorParams(
+                size=app_config.qdrant.embedding_size,
+                distance=Distance.COSINE,
+            ),
+        )
 
     async def upsert(
         self,
