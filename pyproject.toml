@@ -1,7 +1,7 @@
 [project]
-name = "shopkeeper-agent"
+name = "datasprite"
 version = "0.1.0"
-description = "Add your description here"
+description = "DataSprite 问数精灵 — NL2SQL 智能数据分析系统"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [

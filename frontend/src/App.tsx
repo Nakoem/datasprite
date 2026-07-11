@@ -237,7 +237,7 @@ export default function App() {
                 <BarChart3 className="h-4 w-4" aria-hidden="true" />
               </div>
               <div className="min-w-0">
-                <div className="truncate text-sm font-semibold text-ink">智能数据分析 Agent</div>
+                <div className="truncate text-sm font-semibold text-ink">DataSprite Agent</div>
                 <div className="truncate text-xs text-ink/45">FastAPI SSE / LangGraph</div>
               </div>
             </div>
