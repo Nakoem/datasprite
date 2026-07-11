@@ -173,7 +173,7 @@ export default function App() {
               </div>
               <div>
                 <div className="text-base font-semibold tracking-[0.02em]">电商问数</div>
-                <div className="text-xs text-ink/50">datasprite</div>
+                <div className="text-xs text-ink/50">DataSprite Agent</div>
               </div>
             </div>
           </div>
