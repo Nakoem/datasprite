@@ -16,7 +16,7 @@ from app.core.context import request_id_ctx_var
 
 # lifespan 交给 FastAPI 管理，用于在服务启动和关闭时统一初始化与释放外部客户端
 app = FastAPI(
-    title="电商问数智能体",
+    title="DataSprite 问数精灵",
     lifespan=lifespan,
 )
 
