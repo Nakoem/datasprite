@@ -36,3 +36,8 @@ P1 体验升级：多轮问数 + 意图澄清 + 查询历史
 P2 企业级：  权限控制 + SQL安全 + 定时报告
 P3 进阶：    知识库混合 + 评测体系 + 缓存 + 部署运维
 ```
+## Git
+
+- 远程：https://github.com/Nakoem/datasprite
+- 规则：小改先 commit 攒着，多了再一起 push
+- commit 前先跑 code-review skill，修完 HIGH/MEDIUM 再提交
