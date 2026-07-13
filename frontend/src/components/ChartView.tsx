@@ -307,7 +307,7 @@ function BarChartView({ data, hint }: { data: unknown; hint: ChartHint }) {
                 <LabelList
                   dataKey={key}
                   position={isHorizontal ? "right" : "top"}
-                  style={{ fontSize: 11, fill: CHROME.inkSecondary, fontWeight: 500 }}
+                  style={{ fontSize: 12, fill: CHROME.inkSecondary, fontWeight: 500 }}
                   formatter={(v: number) => formatValue(v)}
                 />
               )}
@@ -508,6 +508,33 @@ function PieChartView({ data, hint }: { data: unknown; hint: ChartHint }) {
     value: Number(row[measureCols[0]]) || 0,
   }));
 
+  const total = chartData.reduce((s, d) => s + d.value, 0);
+
+  const renderLabel = useCallback(
+    ({ cx, cy, midAngle, outerRadius, name, percent }: {
+      cx: number; cy: number; midAngle: number; outerRadius: number; name: string; percent: number;
+    }) => {
+      const RADIAN = Math.PI / 180;
+      const radius = outerRadius * 1.28;
+      const x = cx + radius * Math.cos(-midAngle * RADIAN);
+      const y = cy + radius * Math.sin(-midAngle * RADIAN);
+      return (
+        <text
+          x={x}
+          y={y}
+          fill={CHROME.inkSecondary}
+          textAnchor={x > cx ? "start" : "end"}
+          dominantBaseline="central"
+          style={{ fontSize: 12 }}
+        >
+          <tspan x={x} dy="-0.4em" fill={CHROME.ink}>{name}</tspan>
+          <tspan x={x} dy="1.2em">{`${((percent ?? 0) * 100).toFixed(1)}%`}</tspan>
+        </text>
+      );
+    },
+    [],
+  );
+
   return (
     <ChartShell hint={hint}>
       <ResponsiveContainer width="100%" height="100%">
@@ -518,10 +545,11 @@ function PieChartView({ data, hint }: { data: unknown; hint: ChartHint }) {
             nameKey="name"
             cx="50%"
             cy="50%"
-            outerRadius={100}
+            outerRadius={90}
             innerRadius={0}
             isAnimationActive={false}
             paddingAngle={2}
+            label={renderLabel}
           >
             {chartData.map((_, i) => (
               <Cell
@@ -636,7 +664,7 @@ export function ChartView({ data, query }: { data: unknown; query?: string }) {
           <button
             type="button"
             onClick={() => switchView("chart")}
-            className={`inline-flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-medium transition ${
+            className={`inline-flex items-center gap-1.5 rounded px-3 py-2 text-xs font-medium transition focus:outline-none focus:ring-2 focus:ring-moss/40 ${
               view === "chart"
                 ? "bg-moss/12 text-moss"
                 : "text-ink/45 hover:text-ink/70"
@@ -649,7 +677,7 @@ export function ChartView({ data, query }: { data: unknown; query?: string }) {
         <button
           type="button"
           onClick={() => switchView("table")}
-          className={`inline-flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-medium transition ${
+          className={`inline-flex items-center gap-1.5 rounded px-3 py-2 text-xs font-medium transition focus:outline-none focus:ring-2 focus:ring-moss/40 ${
             view === "table" || !canChart
               ? canChart
                 ? "bg-moss/12 text-moss"

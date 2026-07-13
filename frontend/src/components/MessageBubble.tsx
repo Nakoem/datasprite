@@ -39,7 +39,7 @@ export function MessageBubble({ message }: { message: ChatMessage }) {
               <button
                 type="button"
                 onClick={copy}
-                className="shrink-0 rounded-full p-1.5 text-ink/45 opacity-0 outline-none transition hover:bg-ink/5 hover:text-ink focus:opacity-100 focus:ring-2 focus:ring-moss/40 group-hover:opacity-100"
+                className="shrink-0 rounded-full p-2 text-ink/45 opacity-0 outline-none transition hover:bg-ink/5 hover:text-ink focus:opacity-100 focus:ring-2 focus:ring-moss/40 group-hover:opacity-100"
                 title="复制"
                 aria-label="复制"
               >

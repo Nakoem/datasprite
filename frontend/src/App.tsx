@@ -183,7 +183,7 @@ export default function App() {
               type="button"
               onClick={clearConversation}
               disabled={isStreaming}
-              className="flex h-11 w-full items-center justify-center gap-2 bg-ink text-sm font-semibold text-parchment transition hover:bg-soot disabled:cursor-not-allowed disabled:bg-ink/35"
+              className="flex h-11 w-full items-center justify-center gap-2 bg-ink text-sm font-semibold text-parchment transition hover:bg-soot disabled:cursor-not-allowed disabled:bg-ink/35 focus:outline-none focus:ring-2 focus:ring-moss/40 focus:ring-offset-2"
             >
               <MessageSquarePlus className="h-4 w-4" aria-hidden="true" />
               新会话
@@ -201,7 +201,7 @@ export default function App() {
                     type="button"
                     disabled={isStreaming}
                     onClick={() => startQuery(example)}
-                    className="w-full border border-ink/10 bg-white/42 px-3 py-3 text-left text-sm leading-5 text-ink/75 transition hover:border-moss/35 hover:bg-white/75 disabled:cursor-not-allowed disabled:opacity-55"
+                    className="w-full border border-ink/10 bg-white/42 px-3 py-3 text-left text-sm leading-5 text-ink/75 transition hover:border-moss/35 hover:bg-white/75 disabled:cursor-not-allowed disabled:opacity-55 focus:outline-none focus:ring-2 focus:ring-moss/40"
                   >
                     {example}
                   </button>
@@ -246,7 +246,7 @@ export default function App() {
               onClick={clearConversation}
               disabled={messages.length === 0 || isStreaming}
               className={cn(
-                "grid h-9 w-9 place-items-center rounded-full text-ink/55 transition hover:bg-ink/5 hover:text-ink disabled:cursor-not-allowed disabled:opacity-35",
+                "grid h-11 w-11 place-items-center rounded-full text-ink/55 transition hover:bg-ink/5 hover:text-ink disabled:cursor-not-allowed disabled:opacity-35 focus:outline-none focus:ring-2 focus:ring-moss/40 focus:ring-offset-2",
               )}
               title="清空"
               aria-label="清空"

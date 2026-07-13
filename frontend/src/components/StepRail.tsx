@@ -66,7 +66,7 @@ function statusFor(step: string, map: Record<string, StepState>): FlowStatus {
 
 function NodeIcon({ status }: { status: FlowStatus }) {
   if (status === "running") {
-    return <LoaderCircle className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />;
+    return <LoaderCircle className="h-3.5 w-3.5 motion-safe:animate-spin" aria-hidden="true" />;
   }
 
   if (status === "success") {
