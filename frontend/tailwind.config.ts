@@ -17,6 +17,13 @@ export default {
           '"Microsoft YaHei"',
           "sans-serif",
         ],
+        serif: [
+          '"Fraunces"',
+          '"LXGW WenKai Screen"',
+          '"Noto Serif SC"',
+          "Georgia",
+          "serif",
+        ],
         mono: ['"JetBrains Mono"', '"SFMono-Regular"', "Consolas", "monospace"],
       },
       colors: {
