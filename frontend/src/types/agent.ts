@@ -1,7 +1,10 @@
 /**
  * 智能体类型定义
- * 定义问数智能体前端使用的 SSE 事件、流程步骤和聊天消息类型
+ * 定义问数智能体前端使用的 SSE 事件、流程步骤、聊天消息和图表类型
  */
+
+// ── SSE 事件 ──
+
 export type ProgressStatus = "running" | "success" | "error";
 
 export type ProgressEvent = {
@@ -22,6 +25,8 @@ export type ErrorEvent = {
 
 export type AgentEvent = ProgressEvent | ResultEvent | ErrorEvent;
 
+// ── 步骤 & 消息 ──
+
 export type StepState = {
   step: string;
   status: ProgressStatus;
@@ -37,4 +42,23 @@ export type ChatMessage = {
   steps?: StepState[];
   result?: unknown;
   error?: string;
+};
+
+// ── 图表 ──
+
+/** 自动检测的图表类型 */
+export type ChartType = "line" | "bar" | "pie" | "stackedBar" | "area" | "heatmap" | "table";
+
+/** 图表检测结果：描述从查询结果中分析出的可视化建议 */
+export type ChartHint = {
+  /** 推荐图表类型；null 表示数据不适合出图 */
+  chartType: ChartType | null;
+  /** 维度列名（x 轴 / 分类字段） */
+  dimensionCol: string | null;
+  /** 度量列名列表（y 轴 / 数值字段）；热力图时只含度量列 */
+  measureCols: string[];
+  /** 第二维度列名（热力图 Y 轴 / 多系列分组） */
+  dimensionCol2?: string;
+  /** 不适合出图时的原因说明 */
+  reason?: string;
 };
