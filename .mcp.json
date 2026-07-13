@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "vision": {
+      "type": "stdio",
+      "command": "C:/Python314/python.exe",
+      "args": ["c:/Users/Lenovo/Desktop/new project/vision-mcp/server.py"],
+      "env": {
+        "DASHSCOPE_API_KEY": "sk-2a7abcbb02ce48ae8cce4f81ff6e0b52"
+      }
+    }
+  }
+}

@@ -3,22 +3,7 @@
  * 将后端返回的结构化数据归一化为可滚动表格
  */
 import { Database, FileJson } from "lucide-react";
-
-function normalizeRows(data: unknown): Array<Record<string, unknown>> {
-  if (Array.isArray(data)) {
-    return data.map((item, index) =>
-      item && typeof item === "object" && !Array.isArray(item)
-        ? (item as Record<string, unknown>)
-        : { 序号: index + 1, 值: item },
-    );
-  }
-
-  if (data && typeof data === "object") {
-    return [data as Record<string, unknown>];
-  }
-
-  return [{ 值: data ?? "" }];
-}
+import { normalizeRows } from "../lib/chartDetector";
 
 function formatCell(value: unknown) {
   if (value === null || value === undefined) return "-";
