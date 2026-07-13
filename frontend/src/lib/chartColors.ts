@@ -13,12 +13,12 @@
 // ── 图表 chrome（品牌：parchment 表面 + ink 文字）──
 
 export const CHROME = {
-  surface: "#f7f1e8",
-  ink: "#20201d",
-  inkSecondary: "#52514e",
-  inkMuted: "#8a8782",
-  gridline: "#e1ddd6",
-  baseline: "#c8c0b5",
+  surface: "#FAF8F4",
+  ink: "#14110E",
+  inkSecondary: "#6B645A",
+  inkMuted: "#9A9284",
+  gridline: "#E5E0D4",
+  baseline: "#C5BFB4",
 } as const;
 
 // ── 分类色板（8 slots，已验证）──
@@ -56,24 +56,24 @@ export const CATEGORICAL = CATEGORICAL_LIGHT;
 // ── 强调色（单系列 → 品牌 moss）──
 
 export const EMPHASIS = {
-  light: "#2f6b4f", // moss — 单系列柱/线默认填充
-  lightHover: "#3e8563", // hover 时稍亮
-  area: "rgba(47, 107, 79, 0.10)", // 面积图填充 wash
+  light: "#5E7855", // moss (Thrive sage) — 单系列柱/线默认填充
+  lightHover: "#7A9370", // hover 时稍亮
+  area: "rgba(94, 120, 85, 0.10)", // 面积图填充 wash
 } as const;
 
 // ── 降级灰（"其他"系列的上下文色）──
 
-export const DEEMPHASIS = "#c8c0b5";
+export const DEEMPHASIS = "#C5BFB4";
 
 // ── 顺序渐变（moss 单色，light→dark，用于有序类别）──
 
 export const SEQUENTIAL = [
-  "#d5e8dc", // 100
-  "#a3ccb5", // 200
-  "#72b18e", // 300
-  "#4a8a6d", // 400
-  "#2f6b4f", // 500 — moss
-  "#1e4533", // 600
+  "#DEE5D9", // 100
+  "#B8C9AE", // 200
+  "#91AA82", // 300
+  "#7A9370", // 400
+  "#5E7855", // 500 — moss (Thrive sage)
+  "#3D5235", // 600
 ] as const;
 
 // ── 状态色（固定，不主题化）──

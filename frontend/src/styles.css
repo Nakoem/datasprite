@@ -26,7 +26,7 @@ body,
 
 body {
     margin: 0;
-    background: #f7f1e8;
+    background: #FAF8F4;
     overflow: hidden;
 }
 
@@ -36,14 +36,14 @@ textarea {
 }
 
 ::selection {
-    background: rgba(47, 107, 79, 0.2);
+    background: rgba(94, 120, 85, 0.2);
 }
 
 .grain {
     opacity: 0.32;
     background-image: radial-gradient(
         circle at 1px 1px,
-        rgba(32, 32, 29, 0.18) 1px,
+        rgba(20, 17, 14, 0.18) 1px,
         transparent 0
     );
     background-size: 18px 18px;
