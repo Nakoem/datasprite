@@ -46,7 +46,7 @@ export function EmptyState({ examples, onUseExample }: EmptyStateProps) {
             key={example}
             type="button"
             onClick={() => onUseExample(example)}
-            className="min-h-20 border border-ink/10 bg-[#fffaf1]/75 px-4 py-4 text-left text-[15px] leading-6 text-ink transition hover:-translate-y-0.5 hover:border-moss/35 hover:bg-white focus:outline-none focus:ring-2 focus:ring-moss/35"
+            className="min-h-20 border border-ink/10 bg-white/80 px-4 py-4 text-left text-[15px] leading-6 text-ink transition hover:-translate-y-0.5 hover:border-moss/35 hover:bg-white focus:outline-none focus:ring-2 focus:ring-moss/35"
           >
             {example}
           </button>

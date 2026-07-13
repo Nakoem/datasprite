@@ -30,7 +30,7 @@ export function MessageBubble({ message }: { message: ChatMessage }) {
             "relative border px-5 py-4 shadow-line",
             isUser
               ? "border-ink/80 bg-ink text-parchment"
-              : "border-ink/10 bg-[#fffaf1]/78 text-ink backdrop-blur",
+              : "border-ink/10 bg-white/80 text-ink backdrop-blur",
           )}
         >
           <div className="flex items-start justify-between gap-3">
