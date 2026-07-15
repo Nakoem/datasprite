@@ -81,3 +81,10 @@ class DataAgentState(TypedDict, total=False):
     error: str  # 校验SQL时出现的错误信息
 
     correct_retry_count: int  # SQL修正重试次数，每轮correct_sql后+1
+
+    # ── 多轮对话与意图澄清 ──
+    conversation_id: str  # 会话 UUID
+    conversation_history: str  # 格式化后的历史消息文本（给 LLM 用）
+    intent: str  # 意图类型：new / follow_up / ambiguous
+    clarification_questions: list[str]  # 澄清追问选项
+    resolved_query: str  # 追问时补全后的完整问题

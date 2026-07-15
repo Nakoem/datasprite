@@ -11,13 +11,20 @@ import {
   MessageSquarePlus,
   Server,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ClarificationPanel } from "./components/ClarificationPanel";
 import { Composer } from "./components/Composer";
+import { ConversationList } from "./components/ConversationList";
 import { EmptyState } from "./components/EmptyState";
 import { MessageBubble } from "./components/MessageBubble";
-import { streamQuery } from "./lib/agentApi";
+import {
+  streamQuery,
+  fetchConversations,
+  fetchConversation,
+  deleteConversation,
+} from "./lib/agentApi";
 import { cn, summarizeResult } from "./lib/format";
-import type { AgentEvent, ChatMessage, StepState } from "./types/agent";
+import type { AgentEvent, ChatMessage, Conversation, StepState } from "./types/agent";
 
 const examples = [
   "统计 2025 年第一季度各大区的 GMV，并按 GMV 从高到低排序",
@@ -48,6 +55,10 @@ export default function App() {
   const [activeController, setActiveController] = useState<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
+  // 多轮对话 & 查询历史
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+
   const isStreaming = Boolean(activeController);
   const canSubmit = draft.trim().length > 0 && !isStreaming;
 
@@ -55,6 +66,13 @@ export default function App() {
     () => messages.filter((message) => message.role === "assistant" && message.status === "done").length,
     [messages],
   );
+
+  // 组件挂载时加载历史会话列表
+  useEffect(() => {
+    fetchConversations()
+      .then(setConversations)
+      .catch(() => {/* 静默失败，非关键功能 */});
+  }, []);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({
@@ -66,6 +84,12 @@ export default function App() {
   const startQuery = async (rawQuery = draft) => {
     const query = rawQuery.trim();
     if (!query || isStreaming) return;
+
+    // 首次查询生成会话 ID
+    const cid = conversationId ?? makeId();
+    if (!conversationId) {
+      setConversationId(cid);
+    }
 
     const userMessage: ChatMessage = {
       id: makeId(),
@@ -111,6 +135,15 @@ export default function App() {
             };
           }
 
+          if (event.type === "clarification") {
+            return {
+              ...message,
+              status: "done",
+              content: "需要确认一下～",
+              clarification: event.questions,
+            };
+          }
+
           return {
             ...message,
             status: "error",
@@ -122,7 +155,7 @@ export default function App() {
     };
 
     try {
-      await streamQuery(query, { signal: controller.signal, onEvent });
+      await streamQuery(query, { signal: controller.signal, onEvent }, cid);
       setMessages((current) =>
         current.map((message) =>
           message.id === assistantId && message.status === "streaming"
@@ -130,6 +163,8 @@ export default function App() {
             : message,
         ),
       );
+      // 查询完成后刷新历史列表
+      fetchConversations().then(setConversions).catch(() => {});
     } catch (error) {
       const isAbort = error instanceof DOMException && error.name === "AbortError";
       setMessages((current) =>
@@ -155,8 +190,45 @@ export default function App() {
 
   const clearConversation = () => {
     if (isStreaming) return;
+    setConversationId(null);
     setMessages([]);
     setDraft("");
+  };
+
+  /** 加载历史会话 */
+  const loadConversation = useCallback(async (id: string) => {
+    if (isStreaming) return;
+    try {
+      const detail = await fetchConversation(id);
+      const loaded: ChatMessage[] = detail.messages.map((msg) => ({
+        ...msg,
+        createdAt: msg.createdAt ? new Date(msg.createdAt).getTime() : Date.now(),
+        status: "done" as const,
+      }));
+      setConversationId(id);
+      setMessages(loaded);
+    } catch {
+      // 加载失败静默处理
+    }
+  }, [isStreaming]);
+
+  /** 删除历史会话 */
+  const handleDeleteConversation = useCallback(async (id: string) => {
+    try {
+      await deleteConversation(id);
+      setConversations((prev) => prev.filter((c) => c.id !== id));
+      // 如果删除的是当前会话，则清空
+      if (id === conversationId) {
+        clearConversation();
+      }
+    } catch {
+      // 删除失败静默处理
+    }
+  }, [conversationId, isStreaming]);
+
+  /** 处理澄清追问：点击追问选项 → 自动发送 */
+  const handleClarificationSelect = (question: string) => {
+    startQuery(question);
   };
 
   return (
@@ -192,21 +264,14 @@ export default function App() {
             <section>
               <div className="mb-2 flex items-center gap-2 px-1 text-xs font-semibold uppercase tracking-[0.16em] text-ink/45">
                 <History className="h-3.5 w-3.5" aria-hidden="true" />
-                样例
+                历史
               </div>
-              <div className="space-y-2">
-                {examples.map((example) => (
-                  <button
-                    key={example}
-                    type="button"
-                    disabled={isStreaming}
-                    onClick={() => startQuery(example)}
-                    className="w-full border border-ink/10 bg-white/42 px-3 py-3 text-left text-sm leading-5 text-ink/75 transition hover:border-moss/35 hover:bg-white/75 disabled:cursor-not-allowed disabled:opacity-55 focus:outline-none focus:ring-2 focus:ring-moss/40"
-                  >
-                    {example}
-                  </button>
-                ))}
-              </div>
+              <ConversationList
+                conversations={conversations}
+                activeId={conversationId}
+                onSelect={loadConversation}
+                onDelete={handleDeleteConversation}
+              />
             </section>
           </div>
 
@@ -261,7 +326,11 @@ export default function App() {
             ) : (
               <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-6 lg:px-8">
                 {messages.map((message) => (
-                  <MessageBubble key={message.id} message={message} />
+                  <MessageBubble
+                    key={message.id}
+                    message={message}
+                    onClarificationSelect={handleClarificationSelect}
+                  />
                 ))}
               </div>
             )}

@@ -39,6 +39,7 @@ async def correct_sql(state: DataAgentState, runtime: Runtime[DataAgentContext])
         prompt = PromptTemplate(
             template=load_prompt("correct_sql"),
             input_variables=[
+                "conversation_history",
                 "table_infos",
                 "metric_infos",
                 "date_info",
@@ -55,6 +56,7 @@ async def correct_sql(state: DataAgentState, runtime: Runtime[DataAgentContext])
         result = await chain.ainvoke(
             {
                 # 与生成节点保持一致，用 YAML 向模型提供稳定 可读的结构化上下文
+                "conversation_history": state.get("conversation_history", "") or "",
                 "table_infos": yaml.dump(
                     table_infos, allow_unicode=True, sort_keys=False
                 ),

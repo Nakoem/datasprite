@@ -1,8 +1,9 @@
 /**
  * 智能体接口客户端
- * 封装后端 /api/query SSE 流式接口请求与事件解析逻辑
+ * 封装后端 /api/query SSE 流式接口请求与事件解析逻辑，
+ * 以及会话历史的 CRUD 接口。
  */
-import type { AgentEvent } from "../types/agent";
+import type { AgentEvent, Conversation, ConversationDetail } from "../types/agent";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ?? "";
 
@@ -11,14 +12,18 @@ type QueryOptions = {
   onEvent: (event: AgentEvent) => void;
 };
 
-export async function streamQuery(query: string, options: QueryOptions) {
+export async function streamQuery(
+  query: string,
+  options: QueryOptions,
+  conversationId?: string | null,
+) {
   const response = await fetch(`${API_BASE_URL}/api/query`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Accept: "text/event-stream",
     },
-    body: JSON.stringify({ query }),
+    body: JSON.stringify({ query, conversation_id: conversationId || undefined }),
     signal: options.signal,
   });
 
@@ -74,5 +79,32 @@ function parseSseChunk(chunk: string): AgentEvent | null {
       type: "error",
       message: `无法解析后端事件：${payload}`,
     };
+  }
+}
+
+// ── 会话历史 API ──
+
+export async function fetchConversations(): Promise<Conversation[]> {
+  const response = await fetch(`${API_BASE_URL}/api/conversations`);
+  if (!response.ok) {
+    throw new Error(`获取会话列表失败：HTTP ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function fetchConversation(id: string): Promise<ConversationDetail> {
+  const response = await fetch(`${API_BASE_URL}/api/conversations/${id}`);
+  if (!response.ok) {
+    throw new Error(`获取会话详情失败：HTTP ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function deleteConversation(id: string): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/api/conversations/${id}`, {
+    method: "DELETE",
+  });
+  if (!response.ok) {
+    throw new Error(`删除会话失败：HTTP ${response.status}`);
   }
 }

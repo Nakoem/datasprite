@@ -9,6 +9,7 @@ FastAPI 应用生命周期管理
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from sqlalchemy import text
 
 from app.clients.embedding_client_manager import embedding_client_manager
 from app.clients.es_client_manager import es_client_manager
@@ -29,6 +30,38 @@ async def lifespan(app: FastAPI):
     es_client_manager.init()
     meta_mysql_client_manager.init()
     dw_mysql_client_manager.init()
+
+    # 确保会话和消息表存在（首次启动时创建）
+    async with meta_mysql_client_manager.session_factory() as session:
+        await session.execute(
+            text(
+                """
+                CREATE TABLE IF NOT EXISTS conversations (
+                    id VARCHAR(36) PRIMARY KEY COMMENT '会话 UUID',
+                    title VARCHAR(200) NOT NULL COMMENT '会话标题',
+                    created_at DATETIME DEFAULT NOW() COMMENT '创建时间',
+                    updated_at DATETIME DEFAULT NOW() ON UPDATE NOW() COMMENT '最后更新时间'
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+                """
+            )
+        )
+        await session.execute(
+            text(
+                """
+                CREATE TABLE IF NOT EXISTS messages (
+                    id INT AUTO_INCREMENT PRIMARY KEY COMMENT '消息自增 ID',
+                    conversation_id VARCHAR(36) NOT NULL COMMENT '所属会话 ID',
+                    role VARCHAR(16) NOT NULL COMMENT '消息角色：user/assistant',
+                    content TEXT NOT NULL COMMENT '消息文本内容',
+                    sql TEXT COMMENT '助手消息对应的 SQL',
+                    result JSON COMMENT '助手消息的查询结果',
+                    created_at DATETIME DEFAULT NOW() COMMENT '消息创建时间',
+                    FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+                """
+            )
+        )
+        await session.commit()
 
     # yield 之前是启动逻辑，yield 之后是关闭逻辑；中间阶段由 FastAPI 正常处理请求
     yield

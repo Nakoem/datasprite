@@ -21,9 +21,11 @@ from app.clients.mysql_client_manager import (
 from app.clients.qdrant_client_manager import qdrant_client_manager
 from app.repositories.es.value_es_repository import ValueESRepository
 from app.repositories.mysql.dw.dw_mysql_repository import DWMySQLRepository
+from app.repositories.mysql.meta.conversation_repository import ConversationRepository
 from app.repositories.mysql.meta.meta_mysql_repository import MetaMySQLRepository
 from app.repositories.qdrant.column_qdrant_repository import ColumnQdrantRepository
 from app.repositories.qdrant.metric_qdrant_repository import MetricQdrantRepository
+from app.services.conversation_service import ConversationService
 from app.services.query_service import QueryService
 
 
@@ -82,6 +84,24 @@ async def get_value_es_repository() -> ValueESRepository:
     return ValueESRepository(es_client_manager.client)
 
 
+async def get_conversation_repository(
+    session: Annotated[AsyncSession, Depends(get_meta_session)],
+) -> ConversationRepository:
+    """基于请求级 Session 创建会话仓储"""
+
+    return ConversationRepository(session)
+
+
+async def get_conversation_service(
+    conversation_repository: Annotated[
+        ConversationRepository, Depends(get_conversation_repository)
+    ],
+) -> ConversationService:
+    """组装会话业务服务"""
+
+    return ConversationService(conversation_repository)
+
+
 async def get_query_service(
     meta_mysql_repository: Annotated[
         MetaMySQLRepository, Depends(get_meta_mysql_repository)
@@ -97,6 +117,9 @@ async def get_query_service(
         MetricQdrantRepository, Depends(get_metric_qdrant_repository)
     ],
     value_es_repository: Annotated[ValueESRepository, Depends(get_value_es_repository)],
+    conversation_service: Annotated[
+        ConversationService, Depends(get_conversation_service)
+    ],
 ) -> QueryService:
     """组装一次查询所需的业务服务"""
 
@@ -108,4 +131,5 @@ async def get_query_service(
         column_qdrant_repository=column_qdrant_repository,
         metric_qdrant_repository=metric_qdrant_repository,
         value_es_repository=value_es_repository,
+        conversation_service=conversation_service,
     )

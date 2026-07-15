@@ -13,3 +13,5 @@ class QuerySchema(BaseModel):
 
     # 前端请求体中的 query 字段，例如 {"query": "统计华北地区销售额"}
     query: str
+    # 会话 ID，前端生成 UUID；首次查询可空，后端自动创建新会话
+    conversation_id: str | None = None

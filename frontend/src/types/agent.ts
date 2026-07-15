@@ -23,7 +23,12 @@ export type ErrorEvent = {
   message: string;
 };
 
-export type AgentEvent = ProgressEvent | ResultEvent | ErrorEvent;
+export type ClarificationEvent = {
+  type: "clarification";
+  questions: string[];
+};
+
+export type AgentEvent = ProgressEvent | ResultEvent | ErrorEvent | ClarificationEvent;
 
 // ── 步骤 & 消息 ──
 
@@ -42,6 +47,8 @@ export type ChatMessage = {
   steps?: StepState[];
   result?: unknown;
   error?: string;
+  /** 意图澄清时的追问选项 */
+  clarification?: string[];
 };
 
 // ── 图表 ──
@@ -61,4 +68,23 @@ export type ChartHint = {
   dimensionCol2?: string;
   /** 不适合出图时的原因说明 */
   reason?: string;
+};
+
+// ── 会话历史 ──
+
+/** 会话列表项 */
+export type Conversation = {
+  id: string;
+  title: string;
+  createdAt: string | null;
+  updatedAt: string | null;
+};
+
+/** 会话详情（含消息） */
+export type ConversationDetail = {
+  id: string;
+  title: string;
+  createdAt: string | null;
+  updatedAt: string | null;
+  messages: ChatMessage[];
 };

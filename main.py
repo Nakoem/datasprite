@@ -11,6 +11,7 @@ import uuid
 from fastapi import FastAPI, Request
 
 from app.api.lifespan import lifespan
+from app.api.routers.conversation_router import conversation_router
 from app.api.routers.query_router import query_router
 from app.core.context import request_id_ctx_var
 
@@ -22,6 +23,7 @@ app = FastAPI(
 
 # 把查询路由注册进应用；没有挂载时，/docs 和真实 HTTP 请求都访问不到该接口
 app.include_router(query_router)
+app.include_router(conversation_router)
 
 
 @app.middleware("http")

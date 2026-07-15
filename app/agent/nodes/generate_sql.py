@@ -35,6 +35,7 @@ async def generate_sql(state: DataAgentState, runtime: Runtime[DataAgentContext]
         prompt = PromptTemplate(
             template=load_prompt("generate_sql"),
             input_variables=[
+                "conversation_history",
                 "table_infos",
                 "metric_infos",
                 "date_info",
@@ -49,6 +50,7 @@ async def generate_sql(state: DataAgentState, runtime: Runtime[DataAgentContext]
         result = await chain.ainvoke(
             {
                 # YAML 更适合放进提示词：保留嵌套结构 顺序和中文说明，方便模型理解表字段关系
+                "conversation_history": state.get("conversation_history", "") or "",
                 "table_infos": yaml.dump(
                     table_infos, allow_unicode=True, sort_keys=False
                 ),

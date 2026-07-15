@@ -4,11 +4,17 @@
  */
 import { Bot, Copy, UserRound } from "lucide-react";
 import { ChartView } from "./ChartView";
+import { ClarificationPanel } from "./ClarificationPanel";
 import { StepRail } from "./StepRail";
 import { cn, formatTime, toClipboardText } from "../lib/format";
 import type { ChatMessage } from "../types/agent";
 
-export function MessageBubble({ message }: { message: ChatMessage }) {
+type MessageBubbleProps = {
+  message: ChatMessage;
+  onClarificationSelect?: (question: string) => void;
+};
+
+export function MessageBubble({ message, onClarificationSelect }: MessageBubbleProps) {
   const isUser = message.role === "user";
 
   const copy = async () => {
@@ -52,6 +58,13 @@ export function MessageBubble({ message }: { message: ChatMessage }) {
             <div className="mt-3 border border-tomato/30 bg-tomato/10 px-3 py-2 text-sm text-tomato">
               {message.error}
             </div>
+          )}
+
+          {!isUser && message.clarification && onClarificationSelect && (
+            <ClarificationPanel
+              questions={message.clarification}
+              onSelect={onClarificationSelect}
+            />
           )}
 
           {!isUser && <StepRail steps={message.steps} />}
