@@ -21,7 +21,7 @@
  * - Tooltip 增强不关守（值可 table view 获取）
  */
 
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useRef, useEffect } from "react";
 import {
   ResponsiveContainer,
   BarChart,
@@ -48,10 +48,13 @@ import {
   AreaChartIcon,
   Layers,
   Grid3X3,
+  Download,
+  ChevronDown,
 } from "lucide-react";
 
 import { detectChartType, normalizeRows } from "../lib/chartDetector";
 import { CHROME, categorical, EMPHASIS, SEQUENTIAL } from "../lib/chartColors";
+import { exportCSV, exportExcel } from "../lib/export";
 import { ResultTable } from "./ResultTable";
 import type { ChartHint } from "../types/agent";
 
@@ -656,9 +659,31 @@ export function ChartView({ data, query }: { data: unknown; query?: string }) {
   const canChart = hint.chartType && hint.chartType !== "table";
   const Icon = canChart ? CHART_ICON[hint.chartType!] : Table2;
 
+  // 导出下拉
+  const [exportOpen, setExportOpen] = useState(false);
+  const exportRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!exportOpen) return;
+    const close = (e: MouseEvent) => {
+      if (exportRef.current && !exportRef.current.contains(e.target as Node)) {
+        setExportOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [exportOpen]);
+
+  const handleExport = useCallback(
+    (fn: (rows: ReturnType<typeof normalizeRows>) => void) => {
+      fn(normalizeRows(data));
+      setExportOpen(false);
+    },
+    [data],
+  );
+
   return (
     <section className="mt-4">
-      {/* 视图切换 tabs */}
+      {/* 视图切换 + 导出 */}
       <div className="mb-2 flex items-center gap-1">
         {canChart && (
           <button
@@ -691,6 +716,44 @@ export function ChartView({ data, query }: { data: unknown; query?: string }) {
         {hint.reason && (
           <span className="ml-2 text-xs text-ink/35">{hint.reason}</span>
         )}
+
+        {/* 导出下拉 */}
+        <div className="relative ml-auto" ref={exportRef}>
+          <button
+            type="button"
+            onClick={() => setExportOpen((v) => !v)}
+            aria-expanded={exportOpen}
+            aria-haspopup="menu"
+            className="inline-flex items-center gap-1 rounded px-3 py-2 text-xs font-medium text-ink/45 transition hover:text-ink/70 focus:outline-none focus:ring-2 focus:ring-moss/40"
+          >
+            <Download className="h-3.5 w-3.5" />
+            导出
+            <ChevronDown className={`h-3 w-3 transition ${exportOpen ? "rotate-180" : ""}`} />
+          </button>
+          {exportOpen && (
+            <div
+              role="menu"
+              className="absolute right-0 z-10 mt-1 min-w-[120px] rounded border border-ink/10 bg-white py-1 shadow-panel"
+            >
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => handleExport(exportCSV)}
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-ink/75 transition hover:bg-moss/8 hover:text-ink"
+              >
+                CSV
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => handleExport(exportExcel)}
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-ink/75 transition hover:bg-moss/8 hover:text-ink"
+              >
+                Excel
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* 内容 */}
