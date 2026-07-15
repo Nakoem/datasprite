@@ -5,11 +5,38 @@
 面向业务实体而非 ORM 模型，转换逻辑内聚在仓储内部。
 """
 
+import json
+
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.entities.conversation import Conversation, Message
 from app.models.conversation import ConversationMySQL, MessageMySQL
+
+
+def _parse_json(value: str | dict | list | None) -> dict | list | None:
+    """将 raw SQL 返回的 JSON 字符串解析为 Python 对象"""
+    if value is None:
+        return None
+    if isinstance(value, str):
+        try:
+            return json.loads(value)
+        except (json.JSONDecodeError, TypeError):
+            return None
+    return value
+
+
+def _row_to_message(row) -> Message:
+    """将 raw SQL 行映射为 Message 实体，处理 JSON 列的字符串问题"""
+    return Message(
+        id=row["id"],
+        conversation_id=row["conversation_id"],
+        role=row["role"],
+        content=row["content"],
+        sql=row["sql"],
+        result=_parse_json(row["result"]),
+        created_at=row["created_at"],
+    )
 
 
 class ConversationRepository:
@@ -24,13 +51,14 @@ class ConversationRepository:
         """创建新会话记录"""
         model = ConversationMySQL(id=conversation_id, title=title)
         self.session.add(model)
-        await self.session.flush()
+        await self.session.commit()
 
     async def update_title(self, conversation_id: str, title: str) -> None:
         """更新会话标题"""
         conv = await self.session.get(ConversationMySQL, conversation_id)
         if conv:
             conv.title = title
+            await self.session.commit()
 
     async def list_conversations(self) -> list[Conversation]:
         """列出所有会话，按更新时间倒序"""
@@ -69,7 +97,7 @@ class ConversationRepository:
         model = await self.session.get(ConversationMySQL, conversation_id)
         if model:
             await self.session.delete(model)
-            await self.session.flush()
+            await self.session.commit()
 
     # ── 消息 ──
 
@@ -83,14 +111,14 @@ class ConversationRepository:
             result=message.result,
         )
         self.session.add(model)
-        await self.session.flush()
+        await self.session.commit()
 
     async def get_messages(
         self, conversation_id: str, limit: int = 100
     ) -> list[Message]:
         """获取会话的消息列表（按时间正序）"""
         sql = """
-            SELECT id, conversation_id, role, content, sql, result, created_at
+            SELECT id, conversation_id, role, content, `sql`, `result`, created_at
             FROM messages
             WHERE conversation_id = :cid
             ORDER BY created_at ASC
@@ -101,15 +129,7 @@ class ConversationRepository:
         )
         rows = result.mappings().fetchall()
         return [
-            Message(
-                id=row["id"],
-                conversation_id=row["conversation_id"],
-                role=row["role"],
-                content=row["content"],
-                sql=row["sql"],
-                result=row["result"],
-                created_at=row["created_at"],
-            )
+            _row_to_message(row)
             for row in rows
         ]
 

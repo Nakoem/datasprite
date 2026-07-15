@@ -164,7 +164,7 @@ export default function App() {
         ),
       );
       // 查询完成后刷新历史列表
-      fetchConversations().then(setConversions).catch(() => {});
+      fetchConversations().then(setConversations).catch(() => {});
     } catch (error) {
       const isAbort = error instanceof DOMException && error.name === "AbortError";
       setMessages((current) =>
