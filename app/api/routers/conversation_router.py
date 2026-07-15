@@ -4,6 +4,7 @@
 提供会话列表、详情和删除功能，供前端侧边栏展示和加载历史对话。
 """
 
+import datetime as dt
 from typing import Annotated
 
 from fastapi import APIRouter, Depends
@@ -13,6 +14,13 @@ from app.api.dependencies import get_conversation_service
 from app.services.conversation_service import ConversationService
 
 conversation_router = APIRouter()
+
+
+def _ts(d: dt.datetime | None) -> str | None:
+    """将 MySQL 的 UTC naive datetime 转为带时区标记的 ISO 字符串"""
+    if d is None:
+        return None
+    return d.replace(tzinfo=dt.timezone.utc).isoformat()
 
 
 @conversation_router.get("/api/conversations")
@@ -27,8 +35,8 @@ async def list_conversations(
         {
             "id": conv.id,
             "title": conv.title,
-            "createdAt": conv.created_at.isoformat() if conv.created_at else None,
-            "updatedAt": conv.updated_at.isoformat() if conv.updated_at else None,
+            "createdAt": _ts(conv.created_at),
+            "updatedAt": _ts(conv.updated_at),
         }
         for conv in conversations
     ]
@@ -53,8 +61,8 @@ async def get_conversation(
     return {
         "id": conv.id,
         "title": conv.title,
-        "createdAt": conv.created_at.isoformat() if conv.created_at else None,
-        "updatedAt": conv.updated_at.isoformat() if conv.updated_at else None,
+        "createdAt": _ts(conv.created_at),
+        "updatedAt": _ts(conv.updated_at),
         "messages": [
             {
                 "id": msg.id,
@@ -63,7 +71,9 @@ async def get_conversation(
                 "content": msg.content,
                 "sql": msg.sql,
                 "result": msg.result,
-                "createdAt": msg.created_at.isoformat() if msg.created_at else None,
+                "summary": msg.summary,
+                "metricDefinitions": msg.metric_definitions,
+                "createdAt": _ts(msg.created_at),
             }
             for msg in messages
         ],

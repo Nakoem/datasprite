@@ -6,6 +6,25 @@
 @tailwind components;
 @tailwind utilities;
 
+.scrollbar-hide {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+.scrollbar-hide:hover {
+  scrollbar-color: rgba(20, 17, 14, 0.18) transparent;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  width: 5px;
+  background: transparent;
+}
+.scrollbar-hide::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 999px;
+}
+.scrollbar-hide:hover::-webkit-scrollbar-thumb {
+  background: rgba(20, 17, 14, 0.18);
+}
+
 :root {
     color-scheme: light;
     font-synthesis: none;

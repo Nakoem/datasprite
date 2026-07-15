@@ -28,4 +28,6 @@ class Message:
     content: str = ""
     sql: str | None = None
     result: dict | list | None = None
+    summary: str | None = None
+    metric_definitions: list | None = None
     created_at: datetime | None = None

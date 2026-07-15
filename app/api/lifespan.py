@@ -55,6 +55,8 @@ async def lifespan(app: FastAPI):
                     content TEXT NOT NULL COMMENT '消息文本内容',
                     `sql` TEXT COMMENT '助手消息对应的 SQL',
                     `result` JSON COMMENT '助手消息的查询结果',
+                    summary TEXT COMMENT 'AI 生成的结果解读摘要',
+                    metric_definitions JSON COMMENT '本次查询涉及的指标口径说明',
                     created_at DATETIME DEFAULT NOW() COMMENT '消息创建时间',
                     FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4

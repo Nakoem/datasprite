@@ -144,11 +144,21 @@ export default function App() {
             };
           }
 
+          if (event.type === "summary") {
+            return {
+              ...message,
+              summary: event.summary,
+              metricDefinitions: event.metrics,
+            };
+          }
+
+          // catch-all: error events
+          const errorMsg = event.type === "error" ? event.message : "未知错误";
           return {
             ...message,
             status: "error",
             content: "这次查询没有成功。",
-            error: event.message,
+            error: errorMsg,
           };
         }),
       );
@@ -250,7 +260,7 @@ export default function App() {
             </div>
           </div>
 
-          <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-4 py-4">
+          <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-4 py-4 scrollbar-hide">
             <button
               type="button"
               onClick={clearConversation}
@@ -264,7 +274,7 @@ export default function App() {
             <section>
               <div className="mb-2 flex items-center gap-2 px-1 text-xs font-semibold uppercase tracking-[0.16em] text-ink/45">
                 <History className="h-3.5 w-3.5" aria-hidden="true" />
-                历史
+                历史会话
               </div>
               <ConversationList
                 conversations={conversations}
@@ -320,7 +330,7 @@ export default function App() {
             </button>
           </header>
 
-          <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain scrollbar-hide">
             {messages.length === 0 ? (
               <EmptyState examples={examples} onUseExample={(example) => setDraft(example)} />
             ) : (

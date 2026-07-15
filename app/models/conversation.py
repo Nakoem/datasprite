@@ -66,6 +66,16 @@ class MessageMySQL(Base):
         nullable=True,
         comment="助手消息的查询结果（仅 assistant）",
     )
+    summary: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+        comment="AI 生成的结果解读摘要（仅 assistant）",
+    )
+    metric_definitions: Mapped[list | None] = mapped_column(
+        JSON,
+        nullable=True,
+        comment="本次查询涉及的指标口径说明（仅 assistant）",
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=func.now(), comment="消息创建时间"
     )

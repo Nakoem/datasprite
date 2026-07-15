@@ -91,6 +91,8 @@ class QueryService:
         # 收集图执行过程中的关键信息用于持久化
         collected_sql: str | None = None
         collected_result: dict | list | None = None
+        collected_summary: str | None = None
+        collected_metric_definitions: list | None = None
         assistant_content = ""
 
         try:
@@ -109,6 +111,10 @@ class QueryService:
                         collected_result = chunk.get("data")
                         collected_sql = chunk.get("sql")
                         assistant_content = "查询完成"
+                    elif chunk.get("type") == "summary":
+                        collected_summary = chunk.get("summary")
+                        collected_metric_definitions = chunk.get("metrics")
+                        assistant_content = "查询完成"
                     elif chunk.get("type") == "clarification":
                         assistant_content = "需要确认一下～"
 
@@ -126,7 +132,7 @@ class QueryService:
             yield f"data: {json.dumps(error, ensure_ascii=False, default=str)}\n\n"
 
         finally:
-            # 持久化助手消息（包含 SQL 和结果）
+            # 持久化助手消息（包含 SQL、结果和摘要）
             await self.conversation_service.save_message(
                 Message(
                     conversation_id=conversation_id,
@@ -134,5 +140,7 @@ class QueryService:
                     content=assistant_content or "流程已结束",
                     sql=collected_sql,
                     result=collected_result,
+                    summary=collected_summary,
+                    metric_definitions=collected_metric_definitions,
                 )
             )

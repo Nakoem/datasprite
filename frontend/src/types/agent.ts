@@ -28,7 +28,13 @@ export type ClarificationEvent = {
   questions: string[];
 };
 
-export type AgentEvent = ProgressEvent | ResultEvent | ErrorEvent | ClarificationEvent;
+export type SummaryEvent = {
+  type: "summary";
+  summary: string | null;
+  metrics: Array<{ name: string; description: string }>;
+};
+
+export type AgentEvent = ProgressEvent | ResultEvent | ErrorEvent | ClarificationEvent | SummaryEvent;
 
 // ── 步骤 & 消息 ──
 
@@ -49,6 +55,10 @@ export type ChatMessage = {
   error?: string;
   /** 意图澄清时的追问选项 */
   clarification?: string[];
+  /** AI 结果摘要 */
+  summary?: string | null;
+  /** 指标口径说明 */
+  metricDefinitions?: Array<{ name: string; description: string }>;
 };
 
 // ── 图表 ──

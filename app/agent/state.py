@@ -78,6 +78,8 @@ class DataAgentState(TypedDict, total=False):
 
     sql: str  # 生成或校正后的SQL
 
+    result: list[dict]  # run_sql执行后的查询结果，供summarize_result消费
+
     error: str  # 校验SQL时出现的错误信息
 
     correct_retry_count: int  # SQL修正重试次数，每轮correct_sql后+1
