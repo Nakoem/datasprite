@@ -9,6 +9,7 @@ from datetime import datetime
 
 from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.sql.elements import quoted_name
 from sqlalchemy.types import JSON
 
 from app.models.base import Base
@@ -54,10 +55,16 @@ class MessageMySQL(Base):
         Text, nullable=False, comment="消息文本内容"
     )
     sql: Mapped[str | None] = mapped_column(
-        Text, nullable=True, comment="助手消息对应的 SQL（仅 assistant）"
+        Text,
+        name=quoted_name("sql", quote=True),
+        nullable=True,
+        comment="助手消息对应的 SQL（仅 assistant）",
     )
     result: Mapped[dict | list | None] = mapped_column(
-        JSON, nullable=True, comment="助手消息的查询结果（仅 assistant）"
+        JSON,
+        name=quoted_name("result", quote=True),
+        nullable=True,
+        comment="助手消息的查询结果（仅 assistant）",
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=func.now(), comment="消息创建时间"

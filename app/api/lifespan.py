@@ -51,10 +51,10 @@ async def lifespan(app: FastAPI):
                 CREATE TABLE IF NOT EXISTS messages (
                     id INT AUTO_INCREMENT PRIMARY KEY COMMENT '消息自增 ID',
                     conversation_id VARCHAR(36) NOT NULL COMMENT '所属会话 ID',
-                    role VARCHAR(16) NOT NULL COMMENT '消息角色：user/assistant',
+                    role VARCHAR(16) NOT NULL COMMENT '消息角色',
                     content TEXT NOT NULL COMMENT '消息文本内容',
-                    sql TEXT COMMENT '助手消息对应的 SQL',
-                    result JSON COMMENT '助手消息的查询结果',
+                    `sql` TEXT COMMENT '助手消息对应的 SQL',
+                    `result` JSON COMMENT '助手消息的查询结果',
                     created_at DATETIME DEFAULT NOW() COMMENT '消息创建时间',
                     FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
