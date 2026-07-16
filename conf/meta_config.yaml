@@ -55,6 +55,24 @@ tables:
         alias: [会员等级, 用户等级]
         sync: true
 
+      - name: age
+        role: dimension
+        description: 客户年龄。
+        alias: [年龄, 岁数, 年龄段]
+        sync: true
+
+      - name: city
+        role: dimension
+        description: 客户所在城市。
+        alias: [城市, 所在城市, 客户城市, 居住城市]
+        sync: true
+
+      - name: register_channel
+        role: dimension
+        description: 客户注册渠道，如微信、抖音、淘宝等。
+        alias: [注册渠道, 渠道, 来源, 获客渠道]
+        sync: true
+
   - name: dim_product
     role: dim
     description: 商品维度表，描述商品的基本属性信息。
@@ -82,6 +100,18 @@ tables:
         description: 商品品牌名称。
         alias: [品牌, 品牌名称]
         sync: true
+
+      - name: supplier_id
+        role: foreign_key
+        description: 关联供应商维度的外键。
+        alias: [供应商ID]
+        sync: false
+
+      - name: stock_quantity
+        role: measure
+        description: 商品当前库存数量。
+        alias: [库存, 库存量, 库存数量, 存货]
+        sync: false
 
   - name: dim_date
     role: dim
@@ -151,6 +181,12 @@ tables:
         alias: [地区ID, 区域ID]
         sync: false
 
+      - name: promotion_id
+        role: foreign_key
+        description: 关联营销活动维度的外键，NULL 表示非活动订单。
+        alias: [活动ID, 促销ID, 营销活动]
+        sync: false
+
       - name: order_quantity
         role: measure
         description: 订单中商品的购买数量。
@@ -163,6 +199,138 @@ tables:
         alias: [销售额, 订单金额, 收入]
         sync: false
 
+  - name: dim_promotion
+    role: dim
+    description: 营销活动维度表，描述各类促销活动的属性和优惠规则。
+    columns:
+      - name: promotion_id
+        role: primary_key
+        description: 营销活动唯一标识。
+        alias: [活动ID, 促销ID]
+        sync: false
+
+      - name: promotion_name
+        role: dimension
+        description: 营销活动名称，如年货节、618、双11等。
+        alias: [活动名称, 促销活动, 营销活动]
+        sync: true
+
+      - name: promotion_type
+        role: dimension
+        description: 活动类型：满减、折扣、优惠券、秒杀、赠品。
+        alias: [活动类型, 促销类型, 优惠类型]
+        sync: true
+
+      - name: discount_rate
+        role: measure
+        description: 折扣率，0到1之间，0表示无折扣。
+        alias: [折扣率, 折扣力度, 优惠力度]
+        sync: false
+
+      - name: min_amount
+        role: measure
+        description: 参与活动的最低订单金额门槛。
+        alias: [最低金额, 门槛金额, 起用金额]
+        sync: false
+
+      - name: start_date_id
+        role: foreign_key
+        description: 活动开始日期。
+        alias: [开始日期, 活动开始]
+        sync: false
+
+      - name: end_date_id
+        role: foreign_key
+        description: 活动结束日期。
+        alias: [结束日期, 活动结束]
+        sync: false
+
+  - name: dim_supplier
+    role: dim
+    description: 供应商维度表，描述商品供应商的基本信息和评级。
+    columns:
+      - name: supplier_id
+        role: primary_key
+        description: 供应商唯一标识。
+        alias: [供应商ID]
+        sync: false
+
+      - name: supplier_name
+        role: dimension
+        description: 供应商名称。
+        alias: [供应商, 供应商名称, 供应方]
+        sync: true
+
+      - name: contact_person
+        role: dimension
+        description: 供应商联系人姓名。
+        alias: [联系人, 联系人姓名]
+        sync: true
+
+      - name: supplier_city
+        role: dimension
+        description: 供应商所在城市。
+        alias: [供应商城市, 所在城市, 供应城市]
+        sync: true
+
+      - name: rating
+        role: dimension
+        description: 供应商评级，1到5星。
+        alias: [评级, 星级, 供应商评级, 评分]
+        sync: true
+
+      - name: cooperation_years
+        role: measure
+        description: 与供应商的合作年限。
+        alias: [合作年限, 合作时长, 合作年数]
+        sync: false
+
+  - name: fact_inventory
+    role: fact
+    description: 库存事实表，记录各商品在不同仓库的月度库存快照和成本。
+    columns:
+      - name: inventory_id
+        role: primary_key
+        description: 库存记录唯一标识。
+        alias: [库存ID]
+        sync: false
+
+      - name: product_id
+        role: foreign_key
+        description: 关联商品维度的外键。
+        alias: [商品ID, 产品ID]
+        sync: false
+
+      - name: supplier_id
+        role: foreign_key
+        description: 关联供应商维度的外键。
+        alias: [供应商ID]
+        sync: false
+
+      - name: date_id
+        role: foreign_key
+        description: 库存快照日期。
+        alias: [日期, 快照日期]
+        sync: false
+
+      - name: stock_quantity
+        role: measure
+        description: 库存数量。
+        alias: [库存量, 库存数量, 存货]
+        sync: false
+
+      - name: unit_cost
+        role: measure
+        description: 商品单位进货成本。
+        alias: [成本, 单位成本, 进货价, 成本价]
+        sync: false
+
+      - name: warehouse_location
+        role: dimension
+        description: 仓库所在位置。
+        alias: [仓库, 仓库位置, 仓储位置]
+        sync: true
+
 metrics:
   - name: GMV
     description: 全称Gross Merchandise Value，表示所有订单的成交金额总和。
@@ -172,5 +340,46 @@ metrics:
   - name: AOV
     description: 全称Average Order Value，表示所有订单的成交金额平均值。
     relevant_columns:
-      - fact_order.order_quantity
+      - fact_order.order_amount
     alias: [平均单价, 平均订单金额]
+
+  - name: promotion_GMV
+    description: 活动期间的订单成交总额，需结合dim_promotion关联计算。
+    relevant_columns:
+      - fact_order.order_amount
+      - fact_order.promotion_id
+    alias: [活动GMV, 促销成交额, 活动销售额]
+
+  - name: promotion_order_count
+    description: 活动期间的订单数量。
+    relevant_columns:
+      - fact_order.promotion_id
+    alias: [活动订单数, 促销订单量, 活动单量]
+
+  - name: discount_amount
+    description: 因促销活动产生的折扣金额，需结合dim_promotion.discount_rate计算。
+    relevant_columns:
+      - fact_order.order_amount
+      - dim_promotion.discount_rate
+    alias: [折扣金额, 优惠金额, 让利金额]
+
+  - name: inventory_value
+    description: 库存货值，即stock_quantity × unit_cost。
+    relevant_columns:
+      - fact_inventory.stock_quantity
+      - fact_inventory.unit_cost
+    alias: [库存货值, 库存金额, 库存总值]
+
+  - name: stock_turnover_rate
+    description: 库存周转率，一段时间内销售成本与平均库存成本的比率。
+    relevant_columns:
+      - fact_inventory.stock_quantity
+      - fact_inventory.unit_cost
+      - fact_order.order_quantity
+    alias: [库存周转率, 周转率, 存货周转]
+
+  - name: repurchase_rate
+    description: 客户复购率，一段时间内多次购买的客户占比。
+    relevant_columns:
+      - fact_order.customer_id
+    alias: [复购率, 回头客比例, 重复购买率]

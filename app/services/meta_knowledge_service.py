@@ -79,6 +79,14 @@ class MetaKnowledgeService:
                 column_values = await self.dw_mysql_repository.get_column_values(
                     table.name, column.name
                 )
+                # Decimal 类型（MySQL DECIMAL 列）需转 float，否则 JSON 序列化会报错
+                safe_values = []
+                for v in column_values:
+                    try:
+                        safe_values.append(float(v) if v is not None else v)
+                    except (TypeError, ValueError):
+                        safe_values.append(v)
+                column_values = safe_values
                 # 字段 id 使用 table.column 形式，后续在向量索引和全文索引里都会复用
                 column_info = ColumnInfo(
                     id=f"{table.name}.{column.name}",
