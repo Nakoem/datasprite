@@ -79,6 +79,14 @@ class ESConfig:
 
 
 @dataclass
+class RedisConfig:
+    """Redis 配置"""
+
+    host: str
+    port: int
+
+
+@dataclass
 class LLMConfig:
     """大模型调用配置"""
 
@@ -98,6 +106,7 @@ class AppConfig:
     embedding: EmbeddingConfig
     es: ESConfig
     llm: LLMConfig
+    redis: RedisConfig
 
 
 # 从当前文件位置回到项目根目录，再定位到 conf/app_config.yaml

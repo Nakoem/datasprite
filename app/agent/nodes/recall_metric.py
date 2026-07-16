@@ -13,6 +13,7 @@ from langgraph.runtime import Runtime
 from app.agent.context import DataAgentContext
 from app.agent.llm import llm
 from app.agent.state import DataAgentState
+from app.core.cache import cache_embedding, get_cached_embedding
 from app.core.log import logger
 from app.entities.metric_info import MetricInfo
 from app.prompt.prompt_loader import load_prompt
@@ -51,8 +52,11 @@ async def recall_metric(state: DataAgentState, runtime: Runtime[DataAgentContext
         # 用指标 id 做唯一键，避免多个关键词命中同一个指标时重复写入 state
         metric_info_map: dict[str, MetricInfo] = {}
         for keyword in keywords:
-            # 指标库是向量集合，查询词必须先 Embedding 成 query vector
-            embedding = await embedding_client.aembed_query(keyword)
+            # 先查缓存，命中则跳过 Embedding 调用
+            embedding = await get_cached_embedding(keyword)
+            if embedding is None:
+                embedding = await embedding_client.aembed_query(keyword)
+                await cache_embedding(keyword, embedding)
             current_metric_infos: list[
                 MetricInfo
             ] = await metric_qdrant_repository.search(embedding)

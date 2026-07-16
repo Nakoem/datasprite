@@ -13,6 +13,7 @@ from langgraph.runtime import Runtime
 from app.agent.context import DataAgentContext
 from app.agent.llm import llm
 from app.agent.state import DataAgentState
+from app.core.cache import cache_embedding, get_cached_embedding
 from app.core.log import logger
 from app.entities.column_info import ColumnInfo
 from app.prompt.prompt_loader import load_prompt
@@ -51,8 +52,11 @@ async def recall_column(state: DataAgentState, runtime: Runtime[DataAgentContext
         # 用字段 id 做唯一键，因为多个关键词、同一字段的多个向量点都可能命中同一个字段
         column_info_map: dict[str, ColumnInfo] = {}
         for keyword in keywords:
-            # 查询词必须先转成向量，才能和第 9 章写入 Qdrant 的字段向量做相似度检索
-            embedding = await embedding_client.aembed_query(keyword)
+            # 先查缓存，命中则跳过 Embedding 调用
+            embedding = await get_cached_embedding(keyword)
+            if embedding is None:
+                embedding = await embedding_client.aembed_query(keyword)
+                await cache_embedding(keyword, embedding)
             current_column_infos: list[
                 ColumnInfo
             ] = await column_qdrant_repository.search(embedding)

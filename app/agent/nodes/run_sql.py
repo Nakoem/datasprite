@@ -9,6 +9,7 @@ from langgraph.runtime import Runtime
 
 from app.agent.context import DataAgentContext
 from app.agent.state import DataAgentState
+from app.core.cache import cache_query_result, get_cached_query_result
 from app.core.log import logger
 
 
@@ -24,8 +25,11 @@ async def run_sql(state: DataAgentState, runtime: Runtime[DataAgentContext]):
         sql = state["sql"]
         dw_mysql_repository = runtime.context["dw_mysql_repository"]
 
-        # 真实数据库访问统一封装在仓储层，节点只负责从状态取 SQL 并触发执行
-        result = await dw_mysql_repository.run(sql)
+        # 先查缓存，命中则跳过 SQL 执行
+        result = await get_cached_query_result(sql)
+        if result is None:
+            result = await dw_mysql_repository.run(sql)
+            await cache_query_result(sql, result)
         logger.info(f"SQL执行结果：{result}")
         writer({"type": "progress", "step": step, "status": "success"})
         writer({"type": "result", "data": result, "sql": sql})

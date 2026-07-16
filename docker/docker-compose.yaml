@@ -49,6 +49,15 @@ services:
     volumes:
       - qdrant_data:/qdrant/storage
 
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
   embedding:
     image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.8
     platform: linux/amd64
@@ -64,6 +73,7 @@ services:
       - ./embedding/bge-large-zh-v1.5:/models/bge-large-zh-v1.5
 
 volumes:
+  redis_data:
   mysql_data:
   es_data:
   qdrant_data:

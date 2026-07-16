@@ -33,6 +33,10 @@ embedding:
   port: 8081
   model: BAAI/bge-large-zh-v1.5
 
+redis:
+  host: localhost
+  port: 6379
+
 es:
   host: localhost
   port: 9200
