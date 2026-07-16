@@ -9,6 +9,8 @@ FastAPI 应用入口
 import uuid
 
 from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+from loguru import logger
 
 from app.api.lifespan import lifespan
 from app.api.routers.conversation_router import conversation_router
@@ -34,3 +36,19 @@ async def add_request_id(request: Request, call_next):
     response = await call_next(request)
     # 请求被处理之后
     return response
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """兜底所有未捕获异常，统一返回 JSON 错误而非裸 500"""
+    request_id = request_id_ctx_var.get(None)
+    logger.opt(exception=True).error(
+        "未处理异常 | request_id={} path={}", request_id, request.url.path
+    )
+    return JSONResponse(
+        status_code=500,
+        content={
+            "detail": "服务器内部错误，请稍后重试",
+            "request_id": str(request_id) if request_id else None,
+        },
+    )

@@ -41,7 +41,12 @@ class MySQLClientManager:
         """初始化 Engine 和 Session 工厂"""
         # 创建异步 Engine，相当于先把“数据库连接能力”准备好
         self.engine = create_async_engine(
-            self._get_url(), pool_size=10, pool_pre_ping=True
+            self._get_url(),
+            pool_size=10,
+            max_overflow=20,
+            pool_recycle=3600,
+            pool_timeout=30,
+            pool_pre_ping=True,
         )
         # 基于 Engine 创建 Session 工厂，后面真正查库时再拿 session
         self.session_factory = async_sessionmaker(
