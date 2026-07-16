@@ -11,13 +11,28 @@ import uuid
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from loguru import logger
+from opentelemetry import trace
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from opentelemetry.sdk.resources import SERVICE_NAME, Resource
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from app.api.lifespan import lifespan
 from app.api.routers.conversation_router import conversation_router
 from app.api.routers.query_router import query_router
 from app.core.context import request_id_ctx_var
 
-# lifespan 交给 FastAPI 管理，用于在服务启动和关闭时统一初始化与释放外部客户端
+# ── OpenTelemetry 链路追踪 ──────────────────────────────────────────
+resource = Resource.create({SERVICE_NAME: "datasprite"})
+provider = TracerProvider(resource=resource)
+provider.add_span_processor(
+    BatchSpanProcessor(OTLPSpanExporter(endpoint="http://localhost:4318/v1/traces"))
+)
+trace.set_tracer_provider(provider)
+
+# ── FastAPI 应用 ────────────────────────────────────────────────────
 app = FastAPI(
     title="DataSprite 问数精灵",
     lifespan=lifespan,
@@ -27,14 +42,24 @@ app = FastAPI(
 app.include_router(query_router)
 app.include_router(conversation_router)
 
+# ── Prometheus 指标暴露 /metrics ────────────────────────────────────
+Instrumentator().instrument(app).expose(app)
+
+# ── OpenTelemetry 自动埋点 ──────────────────────────────────────────
+FastAPIInstrumentor.instrument_app(app)
+
+
+@app.get("/health")
+async def health():
+    """健康检查端点，供负载均衡 / K8s 探活使用"""
+    return {"status": "ok"}
+
 
 @app.middleware("http")
 async def add_request_id(request: Request, call_next):
-    # 请求被处理之前
     request_id = uuid.uuid4()
     request_id_ctx_var.set(request_id)
     response = await call_next(request)
-    # 请求被处理之后
     return response
 
 
