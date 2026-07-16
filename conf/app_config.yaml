@@ -12,15 +12,15 @@ logging:
 db_meta:
   host: localhost
   port: 3306
-  user: didilili
-  password: dili123
+  user: ${oc.env:DB_USER}
+  password: ${oc.env:DB_PASSWORD}
   database: meta
 
 db_dw:
   host: localhost
   port: 3306
-  user: didilili
-  password: dili123
+  user: ${oc.env:DB_USER}
+  password: ${oc.env:DB_PASSWORD}
   database: dw
 
 qdrant:
