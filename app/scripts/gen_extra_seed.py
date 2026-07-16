@@ -270,13 +270,19 @@ def day_of_week(date_id: int) -> int:
 
 
 def pick_quantity(unit_price: float) -> int:
+    """按价格档位生成长尾购买数量，模拟真实电商行为"""
     if unit_price >= 3000:
-        return random.choices([1, 2], weights=[90, 10])[0]
+        # 高价品（手机/家电）：几乎都是 1 件
+        return random.choices([1, 2], weights=[94, 6])[0]
     if unit_price >= 1000:
-        return random.choices([1, 2], weights=[80, 20])[0]
+        return random.choices([1, 2, 3], weights=[84, 13, 3])[0]
     if unit_price >= 100:
-        return random.choices([1, 2, 3], weights=[55, 30, 15])[0]
-    return random.randint(5, 30)
+        return random.choices([1, 2, 3, 4, 5], weights=[52, 28, 13, 5, 2])[0]
+    # 低价品（零食/饮料/文具）：长尾递减，1-2 件为主
+    return random.choices(
+        [1, 2, 3, 4, 5, 6, 7, 8, 10],
+        weights=[38, 26, 15, 9, 5, 3, 2, 1, 1],
+    )[0]
 
 
 # ═══════════════════════════════════════════════════════════════════
