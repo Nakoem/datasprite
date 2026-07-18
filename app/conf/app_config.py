@@ -96,6 +96,25 @@ class LLMConfig:
 
 
 @dataclass
+class BucketConfig:
+    """单个令牌桶参数：容量决定突发上限，补充速率决定长期均值"""
+
+    capacity: int
+    refill_rate: float
+
+
+@dataclass
+class RateLimitConfig:
+    """API 限流配置（双层令牌桶）"""
+
+    enable: bool
+    exempt_paths: list[str]
+    per_ip: BucketConfig
+    per_ip_query: BucketConfig
+    global_bucket: BucketConfig
+
+
+@dataclass
 class AppConfig:
     """项目级总配置入口"""
 
@@ -107,6 +126,7 @@ class AppConfig:
     es: ESConfig
     llm: LLMConfig
     redis: RedisConfig
+    rate_limit: RateLimitConfig
 
 
 # 从当前文件位置回到项目根目录，再定位到 conf/app_config.yaml

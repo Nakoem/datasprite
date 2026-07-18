@@ -46,3 +46,25 @@ llm:
   model_name: qwen3.7-max
   api_key: ${oc.env:LLM_API_KEY}
   base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+
+rate_limit:
+  enable: true
+  # 豁免路径前缀：探活 / 监控 / 文档不限流
+  exempt_paths:
+    - /health
+    - /metrics
+    - /docs
+    - /redoc
+    - /openapi.json
+  # 普通接口：每 IP 一个桶
+  per_ip:
+    capacity: 30
+    refill_rate: 10
+  # /api/query 收紧档：背后是多次 LLM 调用，又贵又慢
+  per_ip_query:
+    capacity: 5
+    refill_rate: 0.5
+  # 全局桶：所有请求共享的总闸，防分布式刷量烧穿 LLM 账单
+  global_bucket:
+    capacity: 100
+    refill_rate: 50
