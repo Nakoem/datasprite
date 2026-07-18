@@ -7,17 +7,22 @@ API 限流中间件（双层令牌桶）
 Redis 不可用时直接放行（fail-open），限流器故障不影响主业务。
 """
 
+import asyncio
 import time
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
-from loguru import logger
 
 from app.clients.redis_client_manager import redis_client_manager
 from app.conf.app_config import app_config
+from app.core.log import logger
 
 # 命中该前缀的请求走收紧档令牌桶（LLM 链路昂贵）
 _QUERY_PATH_PREFIX = "/api/query"
+
+# 限流检查硬超时（秒）：Redis 假死（连接建立但不响应，如 Docker 代理端口）
+# 不会快速抛错，没有这层兜底 await 会永久挂起，限流器反把全服务吊死
+_ACQUIRE_TIMEOUT = 1.0
 
 # 双层令牌桶 Lua 脚本：KEYS[1]=IP桶 KEYS[2]=全局桶
 # ARGV = 当前时间戳, IP桶容量, IP桶速率, 全局桶容量, 全局桶速率
@@ -92,11 +97,17 @@ _validate_config()
 
 
 async def _acquire_token(client, keys: list[str], args: list) -> tuple[int, int]:
-    """执行令牌桶 Lua 脚本，返回 (是否放行, 建议重试秒数)"""
+    """执行令牌桶 Lua 脚本，返回 (是否放行, 建议重试秒数)
+
+    整体套硬超时：超时抛 TimeoutError，由调用方按 fail-open 放行。
+    """
     global _bucket_script
     if _bucket_script is None:
         _bucket_script = client.register_script(_TOKEN_BUCKET_LUA)
-    allowed, retry_after = await _bucket_script(keys=keys, args=args, client=client)
+    allowed, retry_after = await asyncio.wait_for(
+        _bucket_script(keys=keys, args=args, client=client),
+        timeout=_ACQUIRE_TIMEOUT,
+    )
     return allowed, retry_after
 
 

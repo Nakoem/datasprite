@@ -10,7 +10,6 @@ import uuid
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
-from loguru import logger
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
@@ -23,6 +22,7 @@ from app.api.lifespan import lifespan
 from app.api.routers.conversation_router import conversation_router
 from app.api.routers.query_router import query_router
 from app.core.context import request_id_ctx_var
+from app.core.log import logger
 from app.core.rate_limiter import rate_limit_middleware
 
 # ── OpenTelemetry 链路追踪 ──────────────────────────────────────────
