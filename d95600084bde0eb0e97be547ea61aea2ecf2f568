@@ -1,0 +1,1 @@
+实际变更范围远超CR修复：新增 fact_inventory 库存事实表 + dim_supplier 供应商维度表 + meta_config 211行 + seed_extra 9000+行，将数据库从5表扩展为7表（数仓扩容升级）
