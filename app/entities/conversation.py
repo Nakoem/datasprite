@@ -30,4 +30,5 @@ class Message:
     result: dict | list | None = None
     summary: str | None = None
     metric_definitions: list | None = None
+    column_sources: list | None = None
     created_at: datetime | None = None

@@ -76,6 +76,11 @@ class MessageMySQL(Base):
         nullable=True,
         comment="本次查询涉及的指标口径说明（仅 assistant）",
     )
+    column_sources: Mapped[list | None] = mapped_column(
+        JSON,
+        nullable=True,
+        comment="本次查询涉及的数据来源引用 — 表名+字段详情（仅 assistant）",
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=func.now(), comment="消息创建时间"
     )

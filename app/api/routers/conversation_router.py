@@ -73,6 +73,7 @@ async def get_conversation(
                 "result": msg.result,
                 "summary": msg.summary,
                 "metricDefinitions": msg.metric_definitions,
+                "columnSources": msg.column_sources,
                 "createdAt": _ts(msg.created_at),
             }
             for msg in messages

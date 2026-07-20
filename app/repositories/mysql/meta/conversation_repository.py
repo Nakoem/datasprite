@@ -37,6 +37,7 @@ def _row_to_message(row) -> Message:
         result=_parse_json(row["result"]),
         summary=row.get("summary"),
         metric_definitions=_parse_json(row.get("metric_definitions")),
+        column_sources=_parse_json(row.get("column_sources")),
         created_at=row["created_at"],
     )
 
@@ -113,6 +114,7 @@ class ConversationRepository:
             result=message.result,
             summary=message.summary,
             metric_definitions=message.metric_definitions,
+            column_sources=message.column_sources,
         )
         self.session.add(model)
         await self.session.commit()
@@ -122,7 +124,7 @@ class ConversationRepository:
     ) -> list[Message]:
         """获取会话的消息列表（按时间正序）"""
         sql = """
-            SELECT id, conversation_id, role, content, `sql`, `result`, summary, metric_definitions, created_at
+            SELECT id, conversation_id, role, content, `sql`, `result`, summary, metric_definitions, column_sources, created_at
             FROM messages
             WHERE conversation_id = :cid
             ORDER BY created_at ASC

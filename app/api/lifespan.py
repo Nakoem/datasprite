@@ -59,12 +59,23 @@ async def lifespan(app: FastAPI):
                     `result` JSON COMMENT '助手消息的查询结果',
                     summary TEXT COMMENT 'AI 生成的结果解读摘要',
                     metric_definitions JSON COMMENT '本次查询涉及的指标口径说明',
+                    column_sources JSON COMMENT '本次查询涉及的数据来源引用 — 表名+字段详情',
                     created_at DATETIME DEFAULT NOW() COMMENT '消息创建时间',
                     FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
                 """
             )
         )
+        # 兼容已有数据库：补齐 column_sources 列
+        try:
+            await session.execute(
+                text(
+                    "ALTER TABLE messages ADD COLUMN column_sources JSON "
+                    "COMMENT '本次查询涉及的数据来源引用 — 表名+字段详情'"
+                )
+            )
+        except Exception:
+            pass
         await session.commit()
 
     # yield 之前是启动逻辑，yield 之后是关闭逻辑；中间阶段由 FastAPI 正常处理请求

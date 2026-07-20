@@ -93,6 +93,7 @@ class QueryService:
         collected_result: dict | list | None = None
         collected_summary: str | None = None
         collected_metric_definitions: list | None = None
+        collected_column_sources: list | None = None
         assistant_content = ""
 
         try:
@@ -116,6 +117,7 @@ class QueryService:
                     elif chunk.get("type") == "summary":
                         collected_summary = chunk.get("summary")
                         collected_metric_definitions = chunk.get("metrics")
+                        collected_column_sources = chunk.get("tables")
                         assistant_content = "查询完成"
                     elif chunk.get("type") == "clarification":
                         assistant_content = "需要确认一下～"
@@ -144,5 +146,6 @@ class QueryService:
                     result=collected_result,
                     summary=collected_summary,
                     metric_definitions=collected_metric_definitions,
+                    column_sources=collected_column_sources,
                 )
             )

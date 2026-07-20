@@ -149,6 +149,7 @@ export default function App() {
               ...message,
               summary: event.summary,
               metricDefinitions: event.metrics,
+              columnSources: event.tables,
             };
           }
 

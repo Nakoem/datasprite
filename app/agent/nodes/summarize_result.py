@@ -14,7 +14,7 @@ from langgraph.runtime import Runtime
 
 from app.agent.context import DataAgentContext
 from app.agent.llm import llm
-from app.agent.state import DataAgentState, MetricInfoState
+from app.agent.state import DataAgentState, MetricInfoState, TableInfoState
 from app.core.log import logger
 from app.prompt.prompt_loader import load_prompt
 
@@ -74,6 +74,30 @@ def _build_metric_info(metric_infos: list[MetricInfoState]) -> tuple[str, list[d
     return "\n".join(lines), metrics
 
 
+def _build_table_sources(table_infos: list[TableInfoState]) -> list[dict]:
+    """从过滤后的候选表提取数据来源引用，供前端展示用"""
+    if not table_infos:
+        return []
+
+    tables = []
+    for t in table_infos:
+        columns = []
+        for col in t.get("columns", []):
+            columns.append({
+                "name": col.get("name", ""),
+                "type": col.get("type", ""),
+                "description": col.get("description", ""),
+                "alias": col.get("alias", []),
+            })
+        tables.append({
+            "name": t.get("name", ""),
+            "role": t.get("role", ""),
+            "description": t.get("description", ""),
+            "columns": columns,
+        })
+    return tables
+
+
 async def summarize_result(state: DataAgentState, runtime: Runtime[DataAgentContext]):
     """对查询结果生成 AI 摘要 + 口径说明"""
 
@@ -84,10 +108,12 @@ async def summarize_result(state: DataAgentState, runtime: Runtime[DataAgentCont
     query = state["query"]
     result = state.get("result", [])
     metric_infos: list[MetricInfoState] = state.get("metric_infos", [])
+    table_infos: list[TableInfoState] = state.get("table_infos", [])
 
     # 准备 LLM 入参
     result_data, total_rows = _build_prompt_data(result)
     metric_descriptions, metrics = _build_metric_info(metric_infos)
+    table_sources = _build_table_sources(table_infos)
 
     try:
         prompt = PromptTemplate(
@@ -112,6 +138,7 @@ async def summarize_result(state: DataAgentState, runtime: Runtime[DataAgentCont
             "type": "summary",
             "summary": summary_text,
             "metrics": metrics,
+            "tables": table_sources,
         })
         writer({"type": "progress", "step": step, "status": "success"})
 
@@ -122,6 +149,7 @@ async def summarize_result(state: DataAgentState, runtime: Runtime[DataAgentCont
             "type": "summary",
             "summary": None,
             "metrics": metrics,
+            "tables": table_sources,
         })
         writer({"type": "progress", "step": step, "status": "success"})
 

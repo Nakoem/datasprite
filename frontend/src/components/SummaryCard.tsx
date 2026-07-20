@@ -5,7 +5,7 @@
  * 以及本次查询涉及的指标口径说明（可折叠展开）。
  * 面向非技术业务用户，帮助他们理解数据含义。
  */
-import { ChevronDown, Lightbulb } from "lucide-react";
+import { Calculator, ChevronDown, Lightbulb } from "lucide-react";
 import { useState } from "react";
 
 type MetricDef = {
@@ -48,7 +48,8 @@ export function SummaryCard({ summary, metricDefinitions }: SummaryCardProps) {
             className="flex w-full items-center justify-between px-4 py-2.5 text-left text-sm text-ink/65 transition hover:text-ink/85 focus:outline-none focus:ring-2 focus:ring-moss/40"
             aria-expanded={metricsOpen}
           >
-            <span>
+            <span className="inline-flex items-center gap-2">
+              <Calculator className="h-4 w-4 shrink-0 text-moss" aria-hidden="true" />
               口径说明
               <span className="ml-1.5 text-xs text-ink/40">（{metricDefinitions.length}项）</span>
             </span>

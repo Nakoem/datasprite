@@ -5,6 +5,7 @@
 import { Bot, Copy, UserRound } from "lucide-react";
 import { ChartView } from "./ChartView";
 import { ClarificationPanel } from "./ClarificationPanel";
+import { SourceCard } from "./SourceCard";
 import { StepRail } from "./StepRail";
 import { SummaryCard } from "./SummaryCard";
 import { cn, formatTime, toClipboardText } from "../lib/format";
@@ -74,6 +75,7 @@ export function MessageBubble({ message, onClarificationSelect }: MessageBubbleP
               metricDefinitions={message.metricDefinitions}
             />
           )}
+          {!isUser && <SourceCard columnSources={message.columnSources} />}
 
           {!isUser && <StepRail steps={message.steps} />}
           {!isUser && message.result !== undefined && <ChartView data={message.result} query={message.content} />}

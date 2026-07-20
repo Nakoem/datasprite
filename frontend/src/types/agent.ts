@@ -28,10 +28,23 @@ export type ClarificationEvent = {
   questions: string[];
 };
 
+export type TableSource = {
+  name: string;
+  role: string;
+  description: string;
+  columns: Array<{
+    name: string;
+    type: string;
+    description: string;
+    alias?: string[];
+  }>;
+};
+
 export type SummaryEvent = {
   type: "summary";
   summary: string | null;
   metrics: Array<{ name: string; description: string }>;
+  tables?: TableSource[];
 };
 
 export type AgentEvent = ProgressEvent | ResultEvent | ErrorEvent | ClarificationEvent | SummaryEvent;
@@ -59,6 +72,8 @@ export type ChatMessage = {
   summary?: string | null;
   /** 指标口径说明 */
   metricDefinitions?: Array<{ name: string; description: string }>;
+  /** 数据来源引用（表 + 字段详情） */
+  columnSources?: TableSource[];
 };
 
 // ── 图表 ──
