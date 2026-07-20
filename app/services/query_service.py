@@ -107,6 +107,8 @@ class QueryService:
                         status = chunk.get("status", "")
                         if status == "running":
                             assistant_content = f"正在执行：{step}"
+                        elif status == "retry":
+                            assistant_content = f"正在{step}（重试中）"
                     elif chunk.get("type") == "result":
                         collected_result = chunk.get("data")
                         collected_sql = chunk.get("sql")

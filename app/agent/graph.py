@@ -26,6 +26,7 @@ from app.agent.nodes.recall_column import recall_column
 from app.agent.nodes.recall_metric import recall_metric
 from app.agent.nodes.recall_value import recall_value
 from app.agent.nodes.run_sql import run_sql
+from app.agent.nodes.semantic_validate import semantic_validate
 from app.agent.nodes.summarize_result import summarize_result
 from app.agent.nodes.validate_sql import validate_sql
 from app.agent.state import DataAgentState
@@ -64,6 +65,7 @@ graph_builder.add_node("validate_sql", validate_sql)
 graph_builder.add_node("correct_sql", correct_sql)
 graph_builder.add_node("run_sql", run_sql)
 graph_builder.add_node("summarize_result", summarize_result)
+graph_builder.add_node("semantic_validate", semantic_validate)
 
 # 从意图分类开始，根据分类结果决定是追问澄清还是进入关键词抽取
 graph_builder.add_edge(START, "classify_intent")
@@ -103,11 +105,31 @@ graph_builder.add_edge("filter_metric", "add_extra_context")
 graph_builder.add_edge("add_extra_context", "generate_sql")
 graph_builder.add_edge("generate_sql", "validate_sql")
 
-# SQL 校验通过 → 直接执行
+# SQL 校验通过 → 进入语义校验
 # 校验失败 + 未超重试上限 → 进入修正节点
 # 校验失败 + 已超重试上限 → 放弃修正，直接尝试执行（让 run_sql 报错给用户）
 graph_builder.add_conditional_edges(
     source="validate_sql",
+    path=lambda state: (
+        "semantic_validate"
+        if state["error"] is None
+        else (
+            "correct_sql"
+            if state.get("correct_retry_count", 0) < MAX_CORRECT_RETRIES
+            else "run_sql"
+        )
+    ),
+    path_map={
+        "semantic_validate": "semantic_validate",
+        "run_sql": "run_sql",
+        "correct_sql": "correct_sql",
+    },
+)
+# 语义校验通过 → 直接执行
+# 语义校验失败 + 未超重试上限 → 进入修正节点
+# 语义校验失败 + 已超重试上限 → 保守放行，直接尝试执行
+graph_builder.add_conditional_edges(
+    source="semantic_validate",
     path=lambda state: (
         "run_sql"
         if state["error"] is None
