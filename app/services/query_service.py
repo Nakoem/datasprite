@@ -14,7 +14,7 @@ import uuid
 from langchain_huggingface import HuggingFaceEndpointEmbeddings
 
 from app.agent.context import DataAgentContext
-from app.agent.graph import graph
+from app.agent.graph import graph  # 无 checkpointer 的默认图（fallback）
 from app.agent.state import DataAgentState
 from app.entities.conversation import Message
 from app.repositories.es.value_es_repository import ValueESRepository
@@ -37,6 +37,7 @@ class QueryService:
         metric_qdrant_repository: MetricQdrantRepository,
         value_es_repository: ValueESRepository,
         conversation_service: ConversationService,
+        compiled_graph=None,
     ):
         # MySQL 仓储分别负责元数据补全和真实数仓环境信息读取
         self.meta_mysql_repository = meta_mysql_repository
@@ -50,6 +51,9 @@ class QueryService:
 
         # 会话持久化
         self.conversation_service = conversation_service
+
+        # LangGraph 编译图（可选带 checkpointer）
+        self.compiled_graph = compiled_graph or graph
 
     async def query(self, query: str, conversation_id: str | None = None):
         """执行一次问数工作流，并逐段产出 SSE 消息"""
@@ -98,8 +102,11 @@ class QueryService:
 
         try:
             # stream_mode="custom" 对应节点内部 writer(...) 写出的进度消息
-            async for chunk in graph.astream(
-                input=state, context=context, stream_mode="custom"
+            # config 传入 thread_id（复用 conversation_id），checkpointer 按线程存档
+            astream_config = {"configurable": {"thread_id": conversation_id}}
+            async for chunk in self.compiled_graph.astream(
+                input=state, context=context, stream_mode="custom",
+                config=astream_config,
             ):
                 # 收集 SQL 和结果用于持久化
                 if isinstance(chunk, dict):

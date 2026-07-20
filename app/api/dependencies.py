@@ -10,8 +10,11 @@ from typing import Annotated
 
 from fastapi import Depends
 from langchain_huggingface import HuggingFaceEndpointEmbeddings
+from langgraph.graph.state import CompiledStateGraph
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.agent.checkpointer import MySQLSaver
+from app.agent.graph import compile_graph
 from app.clients.embedding_client_manager import embedding_client_manager
 from app.clients.es_client_manager import es_client_manager
 from app.clients.mysql_client_manager import (
@@ -102,6 +105,31 @@ async def get_conversation_service(
     return ConversationService(conversation_repository)
 
 
+# ── checkpointer 单例（应用级，非请求级）──
+
+_checkpointer: MySQLSaver | None = None
+
+
+async def get_checkpointer() -> MySQLSaver:
+    """获取 MySQLSaver 单例，首次调用时建表。
+
+    复用 meta_mysql_client_manager 的 AsyncEngine，checkpoint 表存在
+    meta 库中。setup() 是幂等的，多次调用安全。
+    """
+    global _checkpointer
+    if _checkpointer is None:
+        _checkpointer = MySQLSaver(meta_mysql_client_manager.engine)
+        await _checkpointer.setup()
+    return _checkpointer
+
+
+async def get_compiled_graph(
+    checkpointer: Annotated[MySQLSaver, Depends(get_checkpointer)],
+):
+    """用 checkpointer 编译 LangGraph 工作流（每个节点后自动存档 state）。"""
+    return compile_graph(checkpointer=checkpointer)
+
+
 async def get_query_service(
     meta_mysql_repository: Annotated[
         MetaMySQLRepository, Depends(get_meta_mysql_repository)
@@ -120,6 +148,9 @@ async def get_query_service(
     conversation_service: Annotated[
         ConversationService, Depends(get_conversation_service)
     ],
+    compiled_graph: Annotated[
+        CompiledStateGraph, Depends(get_compiled_graph)
+    ],
 ) -> QueryService:
     """组装一次查询所需的业务服务"""
 
@@ -132,4 +163,5 @@ async def get_query_service(
         metric_qdrant_repository=metric_qdrant_repository,
         value_es_repository=value_es_repository,
         conversation_service=conversation_service,
+        compiled_graph=compiled_graph,
     )

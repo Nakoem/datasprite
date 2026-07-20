@@ -146,8 +146,18 @@ graph_builder.add_edge("correct_sql", "validate_sql")
 graph_builder.add_edge("run_sql", "summarize_result")
 graph_builder.add_edge("summarize_result", END)
 
-# 编译后的 graph 是对外使用的 Agent 执行入口
-graph = graph_builder.compile()
+def compile_graph(checkpointer=None):
+    """编译 LangGraph 工作流，可选传入 checkpointer 启用 state 持久化。
+
+    传入 checkpointer 后，LangGraph 会在每个节点执行后自动存档 state，
+    支持断点恢复与时间回溯。不传 checkpointer 时行为与之前完全一致，
+    方便本地调试。
+    """
+    return graph_builder.compile(checkpointer=checkpointer)
+
+
+# 无 checkpointer 的默认图（向后兼容 __main__ 测试块）
+graph = compile_graph()
 
 # print(graph.get_graph().draw_mermaid())
 
