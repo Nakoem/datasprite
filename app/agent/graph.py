@@ -17,6 +17,7 @@ from app.agent.nodes.add_extra_context import add_extra_context
 from app.agent.nodes.ask_clarification import ask_clarification
 from app.agent.nodes.classify_intent import classify_intent
 from app.agent.nodes.correct_sql import correct_sql
+from app.agent.nodes.dream import dream
 from app.agent.nodes.extract_keywords import extract_keywords
 from app.agent.nodes.filter_metric import filter_metric
 from app.agent.nodes.filter_table import filter_table
@@ -60,6 +61,7 @@ graph_builder.add_node("merge_retrieved_info", merge_retrieved_info)
 graph_builder.add_node("filter_metric", filter_metric)
 graph_builder.add_node("filter_table", filter_table)
 graph_builder.add_node("add_extra_context", add_extra_context)
+graph_builder.add_node("dream", dream)
 graph_builder.add_node("generate_sql", generate_sql)
 graph_builder.add_node("validate_sql", validate_sql)
 graph_builder.add_node("correct_sql", correct_sql)
@@ -102,7 +104,8 @@ graph_builder.add_edge("merge_retrieved_info", "filter_metric")
 # 表和指标都过滤完成后，统一补充生成 SQL 所需的上下文
 graph_builder.add_edge("filter_table", "add_extra_context")
 graph_builder.add_edge("filter_metric", "add_extra_context")
-graph_builder.add_edge("add_extra_context", "generate_sql")
+graph_builder.add_edge("add_extra_context", "dream")
+graph_builder.add_edge("dream", "generate_sql")
 graph_builder.add_edge("generate_sql", "validate_sql")
 
 # SQL 校验通过 → 进入语义校验
