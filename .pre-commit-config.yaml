@@ -22,3 +22,24 @@ repos:
         language: system
         types_or: [python, pyi]
         require_serial: true
+
+      - id: pytest
+        name: Backend tests
+        entry: uv run pytest tests/ -v
+        language: system
+        pass_filenames: false
+        types_or: [python, pyi]
+
+      - id: frontend-lint
+        name: Frontend lint (tsc)
+        entry: bash -c "cd frontend && pnpm lint"
+        language: system
+        pass_filenames: false
+        types_or: [ts, tsx]
+
+      - id: frontend-test
+        name: Frontend tests (vitest)
+        entry: bash -c "cd frontend && pnpm test"
+        language: system
+        pass_filenames: false
+        types_or: [ts, tsx]
