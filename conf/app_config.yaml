@@ -46,6 +46,10 @@ llm:
   model_name: qwen3.7-max-2026-05-17
   api_key: ${oc.env:LLM_API_KEY}
   base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+  # LLM 容错：单次请求超时 + 自动重试 + 降级模型
+  request_timeout: 60
+  max_retries: 3
+  fallback_model: qwen-plus
 
 rate_limit:
   enable: true

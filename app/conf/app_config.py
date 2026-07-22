@@ -93,6 +93,9 @@ class LLMConfig:
     model_name: str
     api_key: str
     base_url: str
+    request_timeout: int = 60
+    max_retries: int = 2
+    fallback_model: str = ""
 
 
 @dataclass
