@@ -1,10 +1,9 @@
 /**
  * PostCSS 配置
- * 串联 Tailwind CSS 与 Autoprefixer
+ * Tailwind v4 使用 @tailwindcss/postcss 插件
  */
 export default {
   plugins: {
-    tailwindcss: {},
-    autoprefixer: {},
+    "@tailwindcss/postcss": {},
   },
 };
