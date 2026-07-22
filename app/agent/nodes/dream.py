@@ -30,7 +30,6 @@ async def dream(state: DataAgentState, runtime: Runtime[DataAgentContext]):
         logger.info(f"对话历史 {len(history)} chars，未触发压缩阈值 {COMPRESS_CHAR_THRESHOLD}")
         return {"compressed_memory": ""}
 
-    query = state["query"]
     step = "压缩对话记忆"
     writer({"type": "progress", "step": step, "status": "running"})
     logger.info(f"对话历史 {len(history)} chars 触发压缩")

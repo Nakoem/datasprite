@@ -18,7 +18,7 @@ Docker 首次初始化时按字母序在 dw.sql 之后自动加载。
 
 import math
 import random
-from datetime import date, timedelta
+from datetime import date
 from pathlib import Path
 
 random.seed(20250711)
@@ -459,8 +459,6 @@ def gen_fact_order_rows() -> list[str]:
         if not year_dates:
             continue
 
-        # 计算每天的基准订单数（按脉冲调整）
-        daily_base = target_orders / len(year_dates)
         spikes = SPIKE_DEFS.get(year, [])
         day_multipliers = {}
         for d in year_dates:
@@ -586,10 +584,10 @@ def main():
     sql = build_sql()
     OUTPUT_PATH.write_text(sql, encoding="utf-8")
     print(f"已生成 {OUTPUT_PATH}")
-    print(f"  客户: 200 人")
+    print("  客户: 200 人")
     print(f"  商品: {len(ALL_PRODUCTS)} 款（{len(NEW_PRODUCTS)} 新增）")
-    print(f"  供应商: 16 家")
-    print(f"  活动: 17 × 3年（2026仅H1）= ~42 个")
+    print("  供应商: 16 家")
+    print("  活动: 17 × 3年（2026仅H1）= ~42 个")
     total_target = sum(ORDERS_PER_YEAR.values())
     print(f"  目标订单: ~{total_target} 笔（2024:{ORDERS_PER_YEAR[2024]} 2025:{ORDERS_PER_YEAR[2025]} 2026H1:{ORDERS_PER_YEAR[2026]}），实际受泊松采样波动")
 
