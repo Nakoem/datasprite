@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 /**
  * Vite 开发与构建配置
  * 包含 React 插件和后端 API 开发代理
@@ -20,6 +21,10 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
         },
       },
+    },
+    test: {
+      environment: "jsdom",
+      setupFiles: ["./src/test-setup.ts"],
     },
   };
 });
