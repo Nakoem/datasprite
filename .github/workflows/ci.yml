@@ -13,11 +13,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install uv + Python
+      - name: Install uv
         uses: astral-sh/setup-uv@v5
         with:
-          python-version: "3.14"
           enable-cache: true
+
+      - name: Install Python 3.14
+        run: uv python install 3.14
 
       - name: Install dependencies
         run: uv sync --group dev
@@ -37,13 +39,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: pnpm
-          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install pnpm
+        run: npm install -g pnpm@10
 
       - name: Install dependencies
         working-directory: frontend
