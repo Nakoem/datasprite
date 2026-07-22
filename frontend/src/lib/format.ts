@@ -31,5 +31,6 @@ export function summarizeResult(data: unknown) {
 
 export function toClipboardText(value: unknown) {
   if (typeof value === "string") return value;
+  if (Array.isArray(value) && value.length === 0) return "（查询结果为空）";
   return JSON.stringify(value, null, 2);
 }
