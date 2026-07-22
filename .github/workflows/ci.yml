@@ -11,6 +11,10 @@ jobs:
     name: Backend — lint & test
     runs-on: ubuntu-latest
     container: ghcr.io/astral-sh/uv:python3.14-bookworm
+    env:
+      DB_USER: ci
+      DB_PASSWORD: ci
+      LLM_API_KEY: ci
     steps:
       - uses: actions/checkout@v4
 
