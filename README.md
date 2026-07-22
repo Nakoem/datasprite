@@ -2,6 +2,11 @@
   <h1>🧚 DataSprite 问数精灵</h1>
   <h4>NL2SQL 智能数据分析系统</h4>
   <p><em>自然语言提问 → 自动生成 SQL → 流式返回结果</em></p>
+  <p>
+    <a href="https://github.com/Nakoem/datasprite/actions/workflows/ci.yml">
+      <img src="https://github.com/Nakoem/datasprite/actions/workflows/ci.yml/badge.svg" alt="CI">
+    </a>
+  </p>
 </div>
 
 <div align='center'>
