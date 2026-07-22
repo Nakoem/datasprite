@@ -2,7 +2,7 @@
 
 > 功能进度追踪。项目架构/命令看 [CLAUDE.md](CLAUDE.md)。
 
-## 进度：17 / 32
+## 进度：18 / 32
 
 ## 作者建议（7项）
 
@@ -36,7 +36,7 @@
 | # | 功能 | 涉及前端 | 状态 |
 |:--|:---|:--:|:--:|
 | 23 | 📡 多端接入 Channel 抽象层（BaseChannel 接口 + Registry 自动发现 + Manager 生命周期） | 🎨 微信/钉钉接入页 | ⬜ |
-| 24 | 🧠 Dream 记忆压缩（token 预算检测 → LLM 摘要 → 追加式历史，防上下文溢出） | ❌ | ⬜ |
+| 24 | 🧠 Dream 记忆压缩（token 预算检测 → LLM 摘要 → 追加式历史，防上下文溢出） | ❌ | ✅ 已完 |
 | 25 | 🔌 数据源懒加载 Registry（pkgutil 扫描 + 只导入已配置的数据源，节省启动开销） | ❌ | ⬜ |
 
 > **参考**：nanobot 源码 `channels/base.py` + `channels/registry.py` + `channels/manager.py` + `agent/memory.py`
