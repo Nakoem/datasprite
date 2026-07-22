@@ -43,7 +43,7 @@ es:
   index_name: data_agent
 
 llm:
-  model_name: qwen3.7-max
+  model_name: qwen3.7-max-2026-05-17
   api_key: ${oc.env:LLM_API_KEY}
   base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
 
