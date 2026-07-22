@@ -242,6 +242,24 @@ export default function App() {
     startQuery(question);
   };
 
+  /** 重试：找到最后一条用户消息，移除失败的助手消息后重新查询 */
+  const handleRetry = () => {
+    if (isStreaming) return;
+    // 找到最后一条用户消息
+    const lastUser = [...messages].reverse().find((m) => m.role === "user");
+    if (!lastUser) return;
+    // 移除最后一条助手消息（失败的那条）后重新查询
+    setMessages((current) => {
+      let lastAssistantIdx = -1;
+      for (let i = current.length - 1; i >= 0; i--) {
+        if (current[i].role === "assistant") { lastAssistantIdx = i; break; }
+      }
+      if (lastAssistantIdx === -1) return current;
+      return current.slice(0, lastAssistantIdx);
+    });
+    startQuery(lastUser.content);
+  };
+
   return (
     <div className="h-dvh overflow-hidden bg-parchment text-ink">
       <div className="pointer-events-none fixed inset-0 bg-[linear-gradient(90deg,rgba(20,17,14,0.045)_1px,transparent_1px),linear-gradient(rgba(20,17,14,0.035)_1px,transparent_1px)] bg-[size:48px_48px]" />
@@ -341,6 +359,7 @@ export default function App() {
                     key={message.id}
                     message={message}
                     onClarificationSelect={handleClarificationSelect}
+                    onRetry={handleRetry}
                   />
                 ))}
               </div>
@@ -350,7 +369,14 @@ export default function App() {
           <div className="border-t border-ink/10 bg-[#F2EFE8]/45 px-4 py-2 text-center text-xs text-ink/45">
             <span className="inline-flex items-center gap-2">
               <Leaf className="h-3.5 w-3.5 text-moss" aria-hidden="true" />
-              {isStreaming ? "运行中" : "就绪"}
+              {isStreaming ? (
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="loading loading-dots loading-xs text-moss" />
+                  运行中
+                </span>
+              ) : (
+                "就绪"
+              )}
             </span>
           </div>
           <Composer

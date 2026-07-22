@@ -2,7 +2,7 @@
  * 聊天消息气泡组件
  * 组合展示用户问题、智能体回复、执行流程和结果表格
  */
-import { Bot, Copy, UserRound } from "lucide-react";
+import { AlertTriangle, Bot, Copy, RefreshCw, UserRound } from "lucide-react";
 import { ChartView } from "./ChartView";
 import { ClarificationPanel } from "./ClarificationPanel";
 import { SourceCard } from "./SourceCard";
@@ -14,10 +14,13 @@ import type { ChatMessage } from "../types/agent";
 type MessageBubbleProps = {
   message: ChatMessage;
   onClarificationSelect?: (question: string) => void;
+  onRetry?: () => void;
 };
 
-export function MessageBubble({ message, onClarificationSelect }: MessageBubbleProps) {
+export function MessageBubble({ message, onClarificationSelect, onRetry }: MessageBubbleProps) {
   const isUser = message.role === "user";
+  const isStreaming = message.status === "streaming";
+  const hasResult = message.result !== undefined;
 
   const copy = async () => {
     const text = message.result ? toClipboardText(message.result) : message.content;
@@ -57,8 +60,22 @@ export function MessageBubble({ message, onClarificationSelect }: MessageBubbleP
           </div>
 
           {message.error && (
-            <div className="mt-3 border border-tomato/30 bg-tomato/10 px-3 py-2 text-sm text-tomato">
-              {message.error}
+            <div className="mt-3 flex items-start gap-3 border border-tomato/25 bg-tomato/[0.06] px-4 py-3">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-tomato" aria-hidden="true" />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-tomato">查询未成功</p>
+                <p className="mt-1 text-sm text-tomato/75">{message.error}</p>
+              </div>
+              {onRetry && (
+                <button
+                  type="button"
+                  onClick={onRetry}
+                  className="inline-flex shrink-0 items-center gap-1.5 border border-tomato/30 px-3 py-1.5 text-xs font-medium text-tomato transition hover:bg-tomato/10 focus:outline-none focus:ring-2 focus:ring-tomato/40"
+                >
+                  <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
+                  重试
+                </button>
+              )}
             </div>
           )}
 
@@ -76,6 +93,15 @@ export function MessageBubble({ message, onClarificationSelect }: MessageBubbleP
             />
           )}
           {!isUser && <SourceCard columnSources={message.columnSources} />}
+
+          {/* 骨架屏：流式执行中还没出结果时给个占位 */}
+          {!isUser && isStreaming && !hasResult && (
+            <div className="mt-4 space-y-3">
+              <div className="skeleton h-5 w-2/3 rounded" />
+              <div className="skeleton h-48 w-full rounded" />
+              <div className="skeleton h-4 w-1/3 rounded" />
+            </div>
+          )}
 
           {!isUser && <StepRail steps={message.steps} />}
           {!isUser && message.result !== undefined && <ChartView data={message.result} query={message.content} />}

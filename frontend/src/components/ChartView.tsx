@@ -50,6 +50,7 @@ import {
   Grid3X3,
   Download,
   ChevronDown,
+  SearchX,
 } from "lucide-react";
 
 import { detectChartType, normalizeRows } from "../lib/chartDetector";
@@ -311,7 +312,7 @@ function BarChartView({ data, hint }: { data: unknown; hint: ChartHint }) {
                   dataKey={key}
                   position={isHorizontal ? "right" : "top"}
                   style={{ fontSize: 12, fill: CHROME.inkSecondary, fontWeight: 500 }}
-                  formatter={(v: number) => formatValue(v)}
+                  formatter={(v: unknown) => formatValue(v as number)}
                 />
               )}
             </Bar>
@@ -515,8 +516,9 @@ function PieChartView({ data, hint }: { data: unknown; hint: ChartHint }) {
 
   const renderLabel = useCallback(
     ({ cx, cy, midAngle, outerRadius, name, percent }: {
-      cx: number; cy: number; midAngle: number; outerRadius: number; name: string; percent: number;
+      cx: number; cy: number; midAngle?: number; outerRadius: number; name?: string; percent?: number;
     }) => {
+      if (midAngle == null || name == null) return null;
       const RADIAN = Math.PI / 180;
       const radius = outerRadius * 1.28;
       const x = cx + radius * Math.cos(-midAngle * RADIAN);
@@ -659,7 +661,10 @@ export function ChartView({ data, query }: { data: unknown; query?: string }) {
   const canChart = hint.chartType && hint.chartType !== "table";
   const Icon = canChart ? CHART_ICON[hint.chartType!] : Table2;
 
-  // 导出下拉
+  const rows = useMemo(() => normalizeRows(data), [data]);
+  const isEmpty = !data || (Array.isArray(data) && data.length === 0);
+
+  // 导出下拉（hooks 必须在 early return 之前）
   const [exportOpen, setExportOpen] = useState(false);
   const exportRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
@@ -680,6 +685,25 @@ export function ChartView({ data, query }: { data: unknown; query?: string }) {
     },
     [data],
   );
+
+  // ── 空结果态 ──
+  if (isEmpty) {
+    return (
+      <section className="mt-4">
+        <div className="flex flex-col items-center gap-4 border border-ink/10 bg-white/70 px-6 py-14">
+          <div className="grid h-14 w-14 place-items-center rounded-full bg-ink/5">
+            <SearchX className="h-6 w-6 text-ink/30" aria-hidden="true" />
+          </div>
+          <div className="text-center">
+            <p className="text-sm font-semibold text-ink/60">没有符合条件的数据</p>
+            <p className="mt-1.5 text-xs text-ink/40">
+              可能的原因：筛选条件过紧、数据尚未入库、或时间范围无匹配记录
+            </p>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="mt-4">
