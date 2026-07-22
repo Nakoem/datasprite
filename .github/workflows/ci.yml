@@ -10,16 +10,9 @@ jobs:
   backend:
     name: Backend — lint & test
     runs-on: ubuntu-latest
+    container: ghcr.io/astral-sh/uv:python3.14-bookworm
     steps:
       - uses: actions/checkout@v4
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
-        with:
-          enable-cache: true
-
-      - name: Install Python 3.14
-        run: uv python install 3.14
 
       - name: Install dependencies
         run: uv sync --group dev
