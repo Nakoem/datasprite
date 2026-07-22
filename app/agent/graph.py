@@ -149,6 +149,7 @@ graph_builder.add_edge("correct_sql", "validate_sql")
 graph_builder.add_edge("run_sql", "summarize_result")
 graph_builder.add_edge("summarize_result", END)
 
+
 def compile_graph(checkpointer=None):
     """编译 LangGraph 工作流，可选传入 checkpointer 启用 state 持久化。
 
@@ -194,7 +195,9 @@ if __name__ == "__main__":
             value_es_repository = ValueESRepository(es_client_manager.client)
 
             # 当前只需要传入原始问题，后续节点会逐步写回召回、过滤和额外上下文结果
-            state = DataAgentState(query="统计华北地区的销售总额", correct_retry_count=0)
+            state = DataAgentState(
+                query="统计华北地区的销售总额", correct_retry_count=0
+            )
             context = DataAgentContext(
                 column_qdrant_repository=column_qdrant_repository,
                 embedding_client=embedding_client_manager.client,

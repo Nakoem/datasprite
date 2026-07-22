@@ -148,9 +148,7 @@ async def get_query_service(
     conversation_service: Annotated[
         ConversationService, Depends(get_conversation_service)
     ],
-    compiled_graph: Annotated[
-        CompiledStateGraph, Depends(get_compiled_graph)
-    ],
+    compiled_graph: Annotated[CompiledStateGraph, Depends(get_compiled_graph)],
 ) -> QueryService:
     """组装一次查询所需的业务服务"""
 

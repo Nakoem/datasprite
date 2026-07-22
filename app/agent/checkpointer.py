@@ -37,6 +37,7 @@ from app.core.log import logger
 
 # ── helpers ──
 
+
 def _search_where(
     config: RunnableConfig | None,
     filter: dict[str, Any] | None = None,
@@ -78,6 +79,7 @@ def _search_where(
 
 
 # ── MySQLSaver ──
+
 
 class MySQLSaver(BaseCheckpointSaver[str]):
     """MySQL 异步 checkpoint 存储。
@@ -285,11 +287,7 @@ class MySQLSaver(BaseCheckpointSaver[str]):
             return CheckpointTuple(
                 config,
                 self.serde.loads_typed((type_, checkpoint_blob)),
-                (
-                    json.loads(metadata_blob.decode("utf-8"))
-                    if metadata_blob
-                    else {}
-                ),
+                (json.loads(metadata_blob.decode("utf-8")) if metadata_blob else {}),
                 (
                     {
                         "configurable": {
@@ -444,9 +442,7 @@ class MySQLSaver(BaseCheckpointSaver[str]):
 
         # 跟 SqliteSaver 一致：全是特殊 write 才 REPLACE，否则 IGNORE
         use_replace = all(w[0] in WRITES_IDX_MAP for w in writes)
-        stmt = (
-            "REPLACE" if use_replace else "INSERT IGNORE"
-        ) + (
+        stmt = ("REPLACE" if use_replace else "INSERT IGNORE") + (
             " INTO langgraph_checkpoint_writes"
             " (thread_id, checkpoint_ns, checkpoint_id,"
             "  task_id, idx, channel, type, value)"
@@ -473,16 +469,11 @@ class MySQLSaver(BaseCheckpointSaver[str]):
     async def adelete_thread(self, thread_id: str) -> None:
         async with self.lock, self.engine.begin() as conn:
             await conn.execute(
-                text(
-                    "DELETE FROM langgraph_checkpoint_writes"
-                    " WHERE thread_id = :tid"
-                ),
+                text("DELETE FROM langgraph_checkpoint_writes WHERE thread_id = :tid"),
                 {"tid": str(thread_id)},
             )
             await conn.execute(
-                text(
-                    "DELETE FROM langgraph_checkpoints WHERE thread_id = :tid"
-                ),
+                text("DELETE FROM langgraph_checkpoints WHERE thread_id = :tid"),
                 {"tid": str(thread_id)},
             )
 

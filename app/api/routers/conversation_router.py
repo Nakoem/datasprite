@@ -50,13 +50,9 @@ async def get_conversation(
     ],
 ):
     """获取单个会话详情（含全部消息）"""
-    conv, messages = await conversation_service.get_conversation_detail(
-        conversation_id
-    )
+    conv, messages = await conversation_service.get_conversation_detail(conversation_id)
     if conv is None:
-        return JSONResponse(
-            status_code=404, content={"detail": "会话不存在"}
-        )
+        return JSONResponse(status_code=404, content={"detail": "会话不存在"})
 
     return {
         "id": conv.id,

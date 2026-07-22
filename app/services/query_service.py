@@ -105,7 +105,9 @@ class QueryService:
             # config 传入 thread_id（复用 conversation_id），checkpointer 按线程存档
             astream_config = {"configurable": {"thread_id": conversation_id}}
             async for chunk in self.compiled_graph.astream(
-                input=state, context=context, stream_mode="custom",
+                input=state,
+                context=context,
+                stream_mode="custom",
                 config=astream_config,
             ):
                 # 收集 SQL 和结果用于持久化

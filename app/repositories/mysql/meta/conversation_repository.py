@@ -21,7 +21,7 @@ def _parse_json(value: str | dict | list | None) -> dict | list | None:
     if isinstance(value, str):
         try:
             return json.loads(value)
-        except (json.JSONDecodeError, TypeError):
+        except json.JSONDecodeError, TypeError:
             return None
     return value
 
@@ -134,10 +134,7 @@ class ConversationRepository:
             text(sql), {"cid": conversation_id, "limit": limit}
         )
         rows = result.mappings().fetchall()
-        return [
-            _row_to_message(row)
-            for row in rows
-        ]
+        return [_row_to_message(row) for row in rows]
 
     async def get_recent_messages(
         self, conversation_id: str, limit: int = 10

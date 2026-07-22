@@ -13,6 +13,7 @@ import pytest
 # FakeLLM — 模拟 LLM，callable + ainvoke/invoke 双接口
 # ═══════════════════════════════════════════════════════════════════
 
+
 class FakeLLM:
     """模拟 LLM 调用。
 
@@ -62,6 +63,7 @@ def fake_llm() -> FakeLLM:
 # ═══════════════════════════════════════════════════════════════════
 # Fake 仓储
 # ═══════════════════════════════════════════════════════════════════
+
 
 class FakeDWMySQLRepository:
     """模拟数仓 MySQL 仓储，可用于控制 validate / run 的行为。"""
@@ -177,6 +179,7 @@ class FakeEmbeddingClient:
 # 运行时助手
 # ═══════════════════════════════════════════════════════════════════
 
+
 class _FakeStreamWriter:
     """收集 writer(event) 调用，供断言检查进度事件。"""
 
@@ -205,6 +208,7 @@ def make_runtime(context: dict) -> MagicMock:
 # ═══════════════════════════════════════════════════════════════════
 # 缓存 mock（自动应用，防止测试意外访问 Redis）
 # ═══════════════════════════════════════════════════════════════════
+
 
 @pytest.fixture(autouse=True)
 def patch_cache(mocker):

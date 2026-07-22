@@ -63,7 +63,8 @@ def _make_context(dw=None):
         "value_es_repository": FakeValueESRepository(),
         "embedding_client": FakeEmbeddingClient(),
         "meta_mysql_repository": FakeMetaMySQLRepository(),
-        "dw_mysql_repository": dw or FakeDWMySQLRepository(
+        "dw_mysql_repository": dw
+        or FakeDWMySQLRepository(
             run_results=[{"total": 12345}],
         ),
     }
@@ -80,17 +81,19 @@ async def test_full_graph_happy_path(mocker, fake_llm):
     """
     from app.agent.graph import compile_graph
 
-    fake_llm.set_sequence([
-        '{"intent": "new"}',     # 1: classify_intent
-        '["销售", "华北"]',       # 2-4: recall x3（并行）
-        '["销售", "华北"]',
-        '["销售", "华北"]',
-        "{}",                     # 5-6: filter x2（并行）
-        "{}",
-        "SELECT 1 AS demo",       # 7: generate_sql
-        '{"pass": true}',         # 8: semantic_validate
-        '{"summary": "查询完成，共 1 条记录"}',   # 9: summarize_result
-    ])
+    fake_llm.set_sequence(
+        [
+            '{"intent": "new"}',  # 1: classify_intent
+            '["销售", "华北"]',  # 2-4: recall x3（并行）
+            '["销售", "华北"]',
+            '["销售", "华北"]',
+            "{}",  # 5-6: filter x2（并行）
+            "{}",
+            "SELECT 1 AS demo",  # 7: generate_sql
+            '{"pass": true}',  # 8: semantic_validate
+            '{"summary": "查询完成，共 1 条记录"}',  # 9: summarize_result
+        ]
+    )
 
     _patch_llm_modules(mocker, fake_llm)
 
@@ -100,21 +103,27 @@ async def test_full_graph_happy_path(mocker, fake_llm):
 
     events: list[dict] = []
     async for chunk in graph.astream(
-        input=state, context=context, stream_mode="custom",
+        input=state,
+        context=context,
+        stream_mode="custom",
     ):
         events.append(chunk)
 
     # ── 断言：关键步骤应全部出现 ──────────────────────────────
-    steps_seen = {
-        e.get("step") for e in events
-        if e.get("type") == "progress"
-    }
+    steps_seen = {e.get("step") for e in events if e.get("type") == "progress"}
     expected_steps = {
-        "分析意图", "抽取关键词",
-        "召回字段信息", "召回字段取值", "召回指标信息",
-        "过滤表信息", "过滤指标信息",
-        "生成SQL", "校验SQL", "语义校验",
-        "执行SQL", "生成结果解读",
+        "分析意图",
+        "抽取关键词",
+        "召回字段信息",
+        "召回字段取值",
+        "召回指标信息",
+        "过滤表信息",
+        "过滤指标信息",
+        "生成SQL",
+        "校验SQL",
+        "语义校验",
+        "执行SQL",
+        "生成结果解读",
     }
     missing = expected_steps - steps_seen
     assert not missing, f"缺少步骤：{missing}"
@@ -140,22 +149,27 @@ async def test_graph_retry_loop(mocker, fake_llm):
     )
 
     # LLM 响应序列（3 次 correct + generate + classify + recall x3 + filter x2 + semantic + summarize）
-    fake_llm.set_sequence([
-        '{"intent": "new"}',           # classify_intent
-        '["销售"]', '["销售"]', '["销售"]',  # recall x3
-        "{}", "{}",                     # filter x2
-        "SELECT * FROM bad_table",      # generate_sql
-        # 第 1 次修正：
-        "SELECT * FROM bad_table2",     # correct_sql ①
-        # 第 2 次修正：
-        "SELECT * FROM bad_table3",     # correct_sql ②
-        # 第 3 次修正：
-        "SELECT * FROM bad_table4",     # correct_sql ③
-        # 第 4 次 validate 通过 → semantic_validate
-        '{"pass": true}',
-        # summarize
-        '{"summary": "修正后查询完成"}',
-    ])
+    fake_llm.set_sequence(
+        [
+            '{"intent": "new"}',  # classify_intent
+            '["销售"]',
+            '["销售"]',
+            '["销售"]',  # recall x3
+            "{}",
+            "{}",  # filter x2
+            "SELECT * FROM bad_table",  # generate_sql
+            # 第 1 次修正：
+            "SELECT * FROM bad_table2",  # correct_sql ①
+            # 第 2 次修正：
+            "SELECT * FROM bad_table3",  # correct_sql ②
+            # 第 3 次修正：
+            "SELECT * FROM bad_table4",  # correct_sql ③
+            # 第 4 次 validate 通过 → semantic_validate
+            '{"pass": true}',
+            # summarize
+            '{"summary": "修正后查询完成"}',
+        ]
+    )
 
     _patch_llm_modules(mocker, fake_llm)
 
@@ -165,13 +179,16 @@ async def test_graph_retry_loop(mocker, fake_llm):
 
     events: list[dict] = []
     async for chunk in graph.astream(
-        input=state, context=ctx, stream_mode="custom",
+        input=state,
+        context=ctx,
+        stream_mode="custom",
     ):
         events.append(chunk)
 
     # 3 次修正（每次有 running + success/retry 两个事件）
     correct_events = [
-        e for e in events
+        e
+        for e in events
         if e.get("type") == "progress"
         and e.get("step") == "校正SQL"
         and e.get("status") == "running"

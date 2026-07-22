@@ -26,10 +26,12 @@ async def ask_clarification(state: DataAgentState, runtime: Runtime[DataAgentCon
         questions = ["能再具体描述一下你的需求吗？"]
 
     logger.info(f"发出澄清追问：{questions}")
-    writer({
-        "type": "clarification",
-        "questions": questions,
-    })
+    writer(
+        {
+            "type": "clarification",
+            "questions": questions,
+        }
+    )
 
     writer({"type": "progress", "step": step, "status": "success"})
 

@@ -19,7 +19,8 @@ from app.prompt.prompt_loader import load_prompt
 
 
 async def semantic_validate(
-    state: DataAgentState, runtime: Runtime[DataAgentContext],
+    state: DataAgentState,
+    runtime: Runtime[DataAgentContext],
 ):
     """用 LLM 校验 SQL 的业务语义是否与用户问题一致"""
 

@@ -13,8 +13,14 @@ def _patch(mocker, fake_llm):
 
 
 def _state(
-    table_infos=None, metric_infos=None, date_info=None, db_info=None,
-    query="", sql="", error="", correct_retry_count=0,
+    table_infos=None,
+    metric_infos=None,
+    date_info=None,
+    db_info=None,
+    query="",
+    sql="",
+    error="",
+    correct_retry_count=0,
 ):
     return {
         "table_infos": table_infos or [],

@@ -41,9 +41,7 @@ async def test_validate_sql_returns_error_on_bad_syntax():
 
     from app.agent.nodes.validate_sql import validate_sql
 
-    dw = FakeDWMySQLRepository(
-        raise_on_validate=Exception("Table 'xxx' doesn't exist")
-    )
+    dw = FakeDWMySQLRepository(raise_on_validate=Exception("Table 'xxx' doesn't exist"))
     writer = _FakeStreamWriter()
     runtime = MagicMock()
     runtime.context = {"dw_mysql_repository": dw}
@@ -62,9 +60,7 @@ async def test_validate_sql_raises_on_infra_error():
 
     from app.agent.nodes.validate_sql import validate_sql
 
-    dw = FakeDWMySQLRepository(
-        raise_on_validate=Exception("connection refused")
-    )
+    dw = FakeDWMySQLRepository(raise_on_validate=Exception("connection refused"))
     writer = _FakeStreamWriter()
     runtime = MagicMock()
     runtime.context = {"dw_mysql_repository": dw}

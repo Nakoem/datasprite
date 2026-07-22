@@ -83,18 +83,22 @@ def _build_table_sources(table_infos: list[TableInfoState]) -> list[dict]:
     for t in table_infos:
         columns = []
         for col in t.get("columns", []):
-            columns.append({
-                "name": col.get("name", ""),
-                "type": col.get("type", ""),
-                "description": col.get("description", ""),
-                "alias": col.get("alias", []),
-            })
-        tables.append({
-            "name": t.get("name", ""),
-            "role": t.get("role", ""),
-            "description": t.get("description", ""),
-            "columns": columns,
-        })
+            columns.append(
+                {
+                    "name": col.get("name", ""),
+                    "type": col.get("type", ""),
+                    "description": col.get("description", ""),
+                    "alias": col.get("alias", []),
+                }
+            )
+        tables.append(
+            {
+                "name": t.get("name", ""),
+                "role": t.get("role", ""),
+                "description": t.get("description", ""),
+                "columns": columns,
+            }
+        )
     return tables
 
 
@@ -118,7 +122,12 @@ async def summarize_result(state: DataAgentState, runtime: Runtime[DataAgentCont
     try:
         prompt = PromptTemplate(
             template=load_prompt("summarize_result"),
-            input_variables=["query", "result_data", "total_rows", "metric_descriptions"],
+            input_variables=[
+                "query",
+                "result_data",
+                "total_rows",
+                "metric_descriptions",
+            ],
         )
         output_parser = JsonOutputParser()
         chain = prompt | llm | output_parser
@@ -134,23 +143,27 @@ async def summarize_result(state: DataAgentState, runtime: Runtime[DataAgentCont
         summary_text = llm_result.get("summary", "")
 
         logger.info(f"结果摘要：{summary_text}")
-        writer({
-            "type": "summary",
-            "summary": summary_text,
-            "metrics": metrics,
-            "tables": table_sources,
-        })
+        writer(
+            {
+                "type": "summary",
+                "summary": summary_text,
+                "metrics": metrics,
+                "tables": table_sources,
+            }
+        )
         writer({"type": "progress", "step": step, "status": "success"})
 
     except Exception as e:
         # LLM 故障降级：不阻塞查询结果，只跳过摘要
         logger.warning(f"结果摘要生成失败，降级跳过：{e}")
-        writer({
-            "type": "summary",
-            "summary": None,
-            "metrics": metrics,
-            "tables": table_sources,
-        })
+        writer(
+            {
+                "type": "summary",
+                "summary": None,
+                "metrics": metrics,
+                "tables": table_sources,
+            }
+        )
         writer({"type": "progress", "step": step, "status": "success"})
 
     return {}

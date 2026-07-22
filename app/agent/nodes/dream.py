@@ -27,7 +27,9 @@ async def dream(state: DataAgentState, runtime: Runtime[DataAgentContext]):
 
     # 历史短 → 不需要压缩
     if len(history) <= COMPRESS_CHAR_THRESHOLD:
-        logger.info(f"对话历史 {len(history)} chars，未触发压缩阈值 {COMPRESS_CHAR_THRESHOLD}")
+        logger.info(
+            f"对话历史 {len(history)} chars，未触发压缩阈值 {COMPRESS_CHAR_THRESHOLD}"
+        )
         return {"compressed_memory": ""}
 
     step = "压缩对话记忆"
@@ -41,7 +43,11 @@ async def dream(state: DataAgentState, runtime: Runtime[DataAgentContext]):
         )
         chain = prompt | llm
         result = await chain.ainvoke({"conversation_history": history})
-        compressed = result.content.strip() if hasattr(result, "content") else str(result).strip()
+        compressed = (
+            result.content.strip()
+            if hasattr(result, "content")
+            else str(result).strip()
+        )
 
         logger.info(f"记忆压缩完成：{len(history)} → {len(compressed)} chars")
         writer({"type": "progress", "step": step, "status": "success"})

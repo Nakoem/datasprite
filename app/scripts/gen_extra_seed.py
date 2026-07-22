@@ -23,7 +23,9 @@ from pathlib import Path
 
 random.seed(20250711)
 
-OUTPUT_PATH = Path(__file__).resolve().parents[2] / "docker" / "mysql" / "seed_extra.sql"
+OUTPUT_PATH = (
+    Path(__file__).resolve().parents[2] / "docker" / "mysql" / "seed_extra.sql"
+)
 
 # ═══════════════════════════════════════════════════════════════════
 # 常量配置
@@ -46,7 +48,15 @@ EXISTING_PRODUCTS = [
     ("P012", "乐事原味薯片 150g", "休闲零食", "乐事", "SUP09", 5.0, 500),
     ("P013", "奥利奥巧克力夹心饼干", "休闲零食", "奥利奥", "SUP10", 3.5, 450),
     ("P014", "Kindle Paperwhite 电子书", "手机数码", "亚马逊", "SUP11", 1399.0, 180),
-    ("P015", "Instant Pot 多功能电压力锅", "家用电器", "Instant Pot", "SUP12", 899.0, 90),
+    (
+        "P015",
+        "Instant Pot 多功能电压力锅",
+        "家用电器",
+        "Instant Pot",
+        "SUP12",
+        899.0,
+        90,
+    ),
     # seed_extra 已有（含 supplier + stock）
     ("P016", "兰蔻小黑瓶精华 30ml", "美妆护肤", "兰蔻", "SUP13", 1080.0, 120),
     ("P017", "雅诗兰黛小棕瓶精华 50ml", "美妆护肤", "雅诗兰黛", "SUP13", 850.0, 100),
@@ -103,15 +113,25 @@ for pid in ALL_PRODUCT_IDS:
     if pid in ("P001", "P010", "P011", "P012", "P013", "P018"):
         PRODUCT_WEIGHTS[pid] = 12.0  # 爆品
     elif pid in ("P003", "P005", "P008", "P016", "P026"):
-        PRODUCT_WEIGHTS[pid] = 6.0   # 热销
-    elif pid in ("P006", "P009", "P017", "P021", "P023", "P027", "P034", "P036", "P039"):
-        PRODUCT_WEIGHTS[pid] = 3.0   # 常销
+        PRODUCT_WEIGHTS[pid] = 6.0  # 热销
+    elif pid in (
+        "P006",
+        "P009",
+        "P017",
+        "P021",
+        "P023",
+        "P027",
+        "P034",
+        "P036",
+        "P039",
+    ):
+        PRODUCT_WEIGHTS[pid] = 3.0  # 常销
     elif price >= 3000:
-        PRODUCT_WEIGHTS[pid] = 1.0   # 高端低频
+        PRODUCT_WEIGHTS[pid] = 1.0  # 高端低频
     elif price <= 50:
-        PRODUCT_WEIGHTS[pid] = 4.0   # 低价高频
+        PRODUCT_WEIGHTS[pid] = 4.0  # 低价高频
     else:
-        PRODUCT_WEIGHTS[pid] = 2.0   # 中等
+        PRODUCT_WEIGHTS[pid] = 2.0  # 中等
 
 # --- 维度参数 ---
 REGION_IDS = ["R001", "R002", "R003", "R004", "R005", "R006"]
@@ -145,21 +165,108 @@ WAREHOUSES = ["华南仓", "华东仓", "西南仓", "华北仓", "华中仓", "
 
 # 姓名池
 SURNAMES = [
-    "李", "王", "张", "刘", "陈", "杨", "赵", "黄", "周", "吴",
-    "徐", "孙", "胡", "朱", "高", "林", "何", "郭", "马", "罗",
-    "梁", "宋", "郑", "谢", "韩", "唐", "冯", "于", "董", "萧",
-    "程", "曹", "袁", "邓", "许", "傅", "沈", "曾", "彭", "吕",
-    "苏", "卢", "蒋", "蔡", "贾", "丁", "魏", "薛", "叶", "阎",
+    "李",
+    "王",
+    "张",
+    "刘",
+    "陈",
+    "杨",
+    "赵",
+    "黄",
+    "周",
+    "吴",
+    "徐",
+    "孙",
+    "胡",
+    "朱",
+    "高",
+    "林",
+    "何",
+    "郭",
+    "马",
+    "罗",
+    "梁",
+    "宋",
+    "郑",
+    "谢",
+    "韩",
+    "唐",
+    "冯",
+    "于",
+    "董",
+    "萧",
+    "程",
+    "曹",
+    "袁",
+    "邓",
+    "许",
+    "傅",
+    "沈",
+    "曾",
+    "彭",
+    "吕",
+    "苏",
+    "卢",
+    "蒋",
+    "蔡",
+    "贾",
+    "丁",
+    "魏",
+    "薛",
+    "叶",
+    "阎",
 ]
 MALE_GIVEN = [
-    "伟", "强", "磊", "涛", "斌", "勇", "军", "杰", "峰", "浩",
-    "建国", "志强", "建华", "文博", "宇轩", "浩然", "铭泽",
-    "子涵", "泽宇", "鹏飞", "逸飞", "俊杰", "明哲", "瑞霖",
+    "伟",
+    "强",
+    "磊",
+    "涛",
+    "斌",
+    "勇",
+    "军",
+    "杰",
+    "峰",
+    "浩",
+    "建国",
+    "志强",
+    "建华",
+    "文博",
+    "宇轩",
+    "浩然",
+    "铭泽",
+    "子涵",
+    "泽宇",
+    "鹏飞",
+    "逸飞",
+    "俊杰",
+    "明哲",
+    "瑞霖",
 ]
 FEMALE_GIVEN = [
-    "芳", "敏", "静", "丽", "婷", "雪", "玲", "燕", "娜", "慧",
-    "秀英", "美玲", "雅琴", "诗涵", "欣怡", "雨桐", "梓涵",
-    "一诺", "梓萱", "若曦", "思雨", "梦瑶", "语嫣", "瑾瑜",
+    "芳",
+    "敏",
+    "静",
+    "丽",
+    "婷",
+    "雪",
+    "玲",
+    "燕",
+    "娜",
+    "慧",
+    "秀英",
+    "美玲",
+    "雅琴",
+    "诗涵",
+    "欣怡",
+    "雨桐",
+    "梓涵",
+    "一诺",
+    "梓萱",
+    "若曦",
+    "思雨",
+    "梦瑶",
+    "语嫣",
+    "瑾瑜",
 ]
 
 # 原有 20 客户姓名（C001-C020），保持兼容
@@ -210,16 +317,16 @@ PROMOTION_TEMPLATES = [
 # 节假日销售脉冲：(start, end) → multiplier
 SPIKE_DEFS = {
     2024: [
-        ((20240115, 20240205), 2.0),   # 年货节
-        ((20240214, 20240214), 1.5),   # 情人节
-        ((20240301, 20240308), 1.3),   # 三八
-        ((20240501, 20240505), 1.3),   # 五一
-        ((20240601, 20240618), 2.5),   # 618
-        ((20240810, 20240810), 1.3),   # 七夕
-        ((20241001, 20241007), 1.4),   # 国庆
-        ((20241020, 20241111), 3.0),   # 双11
-        ((20241210, 20241212), 2.0),   # 双12
-        ((20241220, 20241231), 1.5),   # 年终
+        ((20240115, 20240205), 2.0),  # 年货节
+        ((20240214, 20240214), 1.5),  # 情人节
+        ((20240301, 20240308), 1.3),  # 三八
+        ((20240501, 20240505), 1.3),  # 五一
+        ((20240601, 20240618), 2.5),  # 618
+        ((20240810, 20240810), 1.3),  # 七夕
+        ((20241001, 20241007), 1.4),  # 国庆
+        ((20241020, 20241111), 3.0),  # 双11
+        ((20241210, 20241212), 2.0),  # 双12
+        ((20241220, 20241231), 1.5),  # 年终
     ],
     2025: [
         ((20250115, 20250205), 2.0),
@@ -252,6 +359,7 @@ _global_seq = [0]
 # ═══════════════════════════════════════════════════════════════════
 # 工具函数
 # ═══════════════════════════════════════════════════════════════════
+
 
 def next_order_id(date_id: int) -> str:
     _global_seq[0] += 1
@@ -289,6 +397,7 @@ def pick_quantity(unit_price: float) -> int:
 # 生成函数
 # ═══════════════════════════════════════════════════════════════════
 
+
 def gen_customer_rows() -> list[str]:
     """生成 200 客户（C001-C020 保留原有，C021-C200 随机生成）"""
     rows = []
@@ -323,9 +432,7 @@ def gen_product_rows() -> list[str]:
     """生成全部 50 商品 REPLACE INTO 行"""
     rows = []
     for pid, name, cat, brand, sid, price, stock in ALL_PRODUCTS:
-        rows.append(
-            f"('{pid}', '{name}', '{cat}', '{brand}', '{sid}', {stock})"
-        )
+        rows.append(f"('{pid}', '{name}', '{cat}', '{brand}', '{sid}', {stock})")
     return rows
 
 
@@ -500,7 +607,10 @@ def gen_fact_order_rows() -> list[str]:
                 region_weights = []
                 for rid in REGION_IDS:
                     w = 1.0
-                    if rid in REGION_CATEGORY_BOOST and cat in REGION_CATEGORY_BOOST[rid]:
+                    if (
+                        rid in REGION_CATEGORY_BOOST
+                        and cat in REGION_CATEGORY_BOOST[rid]
+                    ):
                         w *= REGION_CATEGORY_BOOST[rid][cat]
                     region_weights.append(w)
                 region_id = random.choices(REGION_IDS, weights=region_weights)[0]
@@ -515,7 +625,9 @@ def gen_fact_order_rows() -> list[str]:
                 promos_today = promo_by_date.get(d, [])
                 if promos_today:
                     # 大促日 60-70%，日常 35%
-                    is_mega = any(p[1] for p in promos_today if "双11" in p[1] or "618" in p[1])
+                    is_mega = any(
+                        p[1] for p in promos_today if "双11" in p[1] or "618" in p[1]
+                    )
                     link_rate = 0.65 if is_mega else 0.35
                     if random.random() < link_rate:
                         promo = random.choice(promos_today)
@@ -532,22 +644,29 @@ def gen_fact_order_rows() -> list[str]:
 # 组装 SQL
 # ═══════════════════════════════════════════════════════════════════
 
+
 def build_sql() -> str:
     parts: list[str] = []
     h = "-- 由 app/scripts/gen_extra_seed.py v2 自动生成，请勿手改"
     parts.append(h)
-    parts.append("-- 扩充：200客户 + 50商品 + 912天 + 供应商/活动/库存 + ~5600订单（泊松采样）")
+    parts.append(
+        "-- 扩充：200客户 + 50商品 + 912天 + 供应商/活动/库存 + ~5600订单（泊松采样）"
+    )
     parts.append("SET NAMES utf8mb4;")
     parts.append("USE dw;")
     parts.append("")
 
     # 客户
-    parts.append("REPLACE INTO dim_customer (customer_id, customer_name, gender, member_level, age, city, register_channel)")
+    parts.append(
+        "REPLACE INTO dim_customer (customer_id, customer_name, gender, member_level, age, city, register_channel)"
+    )
     parts.append("VALUES\n       " + ",\n       ".join(gen_customer_rows()) + ";")
     parts.append("")
 
     # 商品
-    parts.append("REPLACE INTO dim_product (product_id, product_name, category, brand, supplier_id, stock_quantity)")
+    parts.append(
+        "REPLACE INTO dim_product (product_id, product_name, category, brand, supplier_id, stock_quantity)"
+    )
     parts.append("VALUES\n       " + ",\n       ".join(gen_product_rows()) + ";")
     parts.append("")
 
@@ -557,23 +676,31 @@ def build_sql() -> str:
     parts.append("")
 
     # 供应商
-    parts.append("REPLACE INTO dim_supplier (supplier_id, supplier_name, contact_person, supplier_city, rating, cooperation_years)")
+    parts.append(
+        "REPLACE INTO dim_supplier (supplier_id, supplier_name, contact_person, supplier_city, rating, cooperation_years)"
+    )
     parts.append("VALUES\n       " + ",\n       ".join(gen_supplier_rows()) + ";")
     parts.append("")
 
     # 活动
-    parts.append("REPLACE INTO dim_promotion (promotion_id, promotion_name, promotion_type, discount_rate, min_amount, start_date_id, end_date_id)")
+    parts.append(
+        "REPLACE INTO dim_promotion (promotion_id, promotion_name, promotion_type, discount_rate, min_amount, start_date_id, end_date_id)"
+    )
     parts.append("VALUES\n       " + ",\n       ".join(gen_promotion_rows()) + ";")
     parts.append("")
 
     # 库存
-    parts.append("REPLACE INTO fact_inventory (inventory_id, product_id, supplier_id, date_id, stock_quantity, unit_cost, warehouse_location)")
+    parts.append(
+        "REPLACE INTO fact_inventory (inventory_id, product_id, supplier_id, date_id, stock_quantity, unit_cost, warehouse_location)"
+    )
     parts.append("VALUES\n       " + ",\n       ".join(gen_inventory_rows()) + ";")
     parts.append("")
 
     # 订单（最大段）
     order_rows = gen_fact_order_rows()
-    parts.append("REPLACE INTO fact_order (order_id, customer_id, product_id, date_id, region_id, promotion_id, order_quantity, order_amount)")
+    parts.append(
+        "REPLACE INTO fact_order (order_id, customer_id, product_id, date_id, region_id, promotion_id, order_quantity, order_amount)"
+    )
     parts.append("VALUES\n       " + ",\n       ".join(order_rows) + ";")
     parts.append("")
 
@@ -589,7 +716,9 @@ def main():
     print("  供应商: 16 家")
     print("  活动: 17 × 3年（2026仅H1）= ~42 个")
     total_target = sum(ORDERS_PER_YEAR.values())
-    print(f"  目标订单: ~{total_target} 笔（2024:{ORDERS_PER_YEAR[2024]} 2025:{ORDERS_PER_YEAR[2025]} 2026H1:{ORDERS_PER_YEAR[2026]}），实际受泊松采样波动")
+    print(
+        f"  目标订单: ~{total_target} 笔（2024:{ORDERS_PER_YEAR[2024]} 2025:{ORDERS_PER_YEAR[2025]} 2026H1:{ORDERS_PER_YEAR[2026]}），实际受泊松采样波动"
+    )
 
 
 if __name__ == "__main__":

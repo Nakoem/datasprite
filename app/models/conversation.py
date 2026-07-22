@@ -51,9 +51,7 @@ class MessageMySQL(Base):
     role: Mapped[str] = mapped_column(
         String(16), nullable=False, comment="消息角色：user / assistant"
     )
-    content: Mapped[str] = mapped_column(
-        Text, nullable=False, comment="消息文本内容"
-    )
+    content: Mapped[str] = mapped_column(Text, nullable=False, comment="消息文本内容")
     sql: Mapped[str | None] = mapped_column(
         Text,
         name=quoted_name("sql", quote=True),

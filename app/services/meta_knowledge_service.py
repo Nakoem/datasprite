@@ -84,7 +84,7 @@ class MetaKnowledgeService:
                 for v in column_values:
                     try:
                         safe_values.append(float(v) if v is not None else v)
-                    except (TypeError, ValueError):
+                    except TypeError, ValueError:
                         safe_values.append(v)
                 column_values = safe_values
                 # 字段 id 使用 table.column 形式，后续在向量索引和全文索引里都会复用
