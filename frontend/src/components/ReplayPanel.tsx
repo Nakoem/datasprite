@@ -56,7 +56,8 @@ export function ReplayPanel({ conversationId }: ReplayPanelProps) {
         setLoadState("empty");
       } else {
         setCheckpoints(result.checkpoints);
-        setSelectedIndex(0);
+        // 默认选中最后一步：State 看最终态，Diff 看开始→完成全流程
+        setSelectedIndex(result.checkpoints.length - 1);
         setBaseIndex(0);
         setLoadState("loaded");
       }
@@ -98,13 +99,19 @@ export function ReplayPanel({ conversationId }: ReplayPanelProps) {
     setDiff(null);
     fetchCheckpointDiff(
       conversationId,
-      targetCp.checkpointId,
-      baseCp.checkpointId,
+      targetCp.checkpoint_id,
+      baseCp.checkpoint_id,
     )
       .then(setDiff)
-      .catch(() => setDiff(null))
+      .catch((err) => {
+        console.error("Diff 请求失败", err);
+        setDiff(null);
+      })
       .finally(() => setDiffLoading(false));
   }, [conversationId, checkpoints, selectedIndex, baseIndex, tab]);
+
+  // tick 标签精简：只显示节点名，"|" 后面的字段名省略
+  const shortLabel = (label: string) => label.split(" | ")[0];
 
   const selected = useMemo(
     () => checkpoints[selectedIndex] ?? null,
@@ -201,29 +208,39 @@ export function ReplayPanel({ conversationId }: ReplayPanelProps) {
           </button>
         </div>
 
-        {/* tick 标记 */}
-        <div className="relative mt-1.5 h-8">
+        {/* tick 标记 — 奇偶交错上下排列，避免重叠 */}
+        <div className="relative mt-3" style={{ height: "3.5rem" }}>
           {checkpoints.map((cp, i) => {
             const pct =
               checkpoints.length === 1
                 ? 50
                 : (i / (checkpoints.length - 1)) * 100;
+            const isTop = i % 2 === 0;
             return (
               <div
                 key={cp.checkpoint_id}
                 className="absolute -translate-x-1/2"
-                style={{ left: `${pct}%` }}
+                style={{
+                  left: `${pct}%`,
+                  top: isTop ? 0 : "50%",
+                }}
               >
+                {/* 小圆点 */}
+                <div
+                  className={`mx-auto mb-0.5 h-1.5 w-1.5 rounded-full ${
+                    i === selectedIndex ? "bg-moss" : "bg-ink/20"
+                  }`}
+                />
                 <button
                   type="button"
                   onClick={() => setSelectedIndex(i)}
-                  className={`whitespace-nowrap text-[10px] leading-tight transition ${
+                  className={`block whitespace-nowrap text-[10px] leading-tight transition ${
                     i === selectedIndex
                       ? "text-ink/80 font-semibold"
                       : "text-ink/35 hover:text-ink/55"
                   }`}
                 >
-                  {cp.step_label}
+                  {shortLabel(cp.step_label)}
                 </button>
               </div>
             );
