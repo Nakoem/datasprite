@@ -179,7 +179,7 @@ class AuditService:
                 "parent_checkpoint_id": cp.parent_checkpoint_id,
                 "step_number": cp.step_number,
                 "source": cp.source,
-                "node_name": cp.node_name,
+                "step_label": _step_label(cp),
                 "timestamp": cp.timestamp,
                 "has_sql": bool(cp.channel_values.get("sql")),
                 "has_result": bool(cp.channel_values.get("result")),

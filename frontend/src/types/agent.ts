@@ -145,7 +145,7 @@ export type CheckpointSummary = {
   parentCheckpointId: string | null;
   stepNumber: number;
   source: string;
-  nodeName: string | null;
+  stepLabel: string;
   timestamp: string | null;
   hasSql: boolean;
   hasResult: boolean;

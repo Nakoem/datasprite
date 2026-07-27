@@ -223,7 +223,7 @@ export function ReplayPanel({ conversationId }: ReplayPanelProps) {
                       : "text-ink/35 hover:text-ink/55"
                   }`}
                 >
-                  {cp.nodeName || `#${cp.stepNumber}`}
+                  {cp.stepLabel}
                 </button>
               </div>
             );
@@ -314,7 +314,7 @@ export function ReplayPanel({ conversationId }: ReplayPanelProps) {
                   {checkpoints.map((cp, i) => (
                     <option key={cp.checkpointId} value={i}>
                       #{cp.stepNumber}{" "}
-                      {cp.nodeName ? `- ${cp.nodeName}` : ""}
+                      {`- ${cp.stepLabel}`}
                     </option>
                   ))}
                 </select>
@@ -332,7 +332,7 @@ export function ReplayPanel({ conversationId }: ReplayPanelProps) {
                   {checkpoints.map((cp, i) => (
                     <option key={cp.checkpointId} value={i}>
                       #{cp.stepNumber}{" "}
-                      {cp.nodeName ? `- ${cp.nodeName}` : ""}
+                      {`- ${cp.stepLabel}`}
                     </option>
                   ))}
                 </select>
