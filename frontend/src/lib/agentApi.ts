@@ -3,7 +3,15 @@
  * 封装后端 /api/query SSE 流式接口请求与事件解析逻辑，
  * 以及会话历史的 CRUD 接口。
  */
-import type { AgentEvent, Conversation, ConversationDetail } from "../types/agent";
+import type {
+  AgentEvent,
+  AuditTrailResponse,
+  CheckpointDetail,
+  CheckpointDiffResponse,
+  CheckpointListResponse,
+  Conversation,
+  ConversationDetail,
+} from "../types/agent";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ?? "";
 
@@ -107,4 +115,56 @@ export async function deleteConversation(id: string): Promise<void> {
   if (!response.ok) {
     throw new Error(`删除会话失败：HTTP ${response.status}`);
   }
+}
+
+// ── 审计 & 回放 API ──
+
+export async function fetchAuditTrail(
+  conversationId: string,
+): Promise<AuditTrailResponse> {
+  const response = await fetch(
+    `${API_BASE_URL}/api/conversations/${conversationId}/audit`,
+  );
+  if (!response.ok) {
+    throw new Error(`获取审计日志失败：HTTP ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function fetchCheckpoints(
+  conversationId: string,
+): Promise<CheckpointListResponse> {
+  const response = await fetch(
+    `${API_BASE_URL}/api/conversations/${conversationId}/checkpoints`,
+  );
+  if (!response.ok) {
+    throw new Error(`获取检查点列表失败：HTTP ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function fetchCheckpointDetail(
+  conversationId: string,
+  checkpointId: string,
+): Promise<CheckpointDetail> {
+  const response = await fetch(
+    `${API_BASE_URL}/api/conversations/${conversationId}/checkpoints/${checkpointId}`,
+  );
+  if (!response.ok) {
+    throw new Error(`获取检查点详情失败：HTTP ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function fetchCheckpointDiff(
+  conversationId: string,
+  targetId: string,
+  baseId: string,
+): Promise<CheckpointDiffResponse> {
+  const url = `${API_BASE_URL}/api/conversations/${conversationId}/checkpoints/${targetId}/diff?base=${baseId}`;
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`获取检查点差异失败：HTTP ${response.status}`);
+  }
+  return response.json();
 }

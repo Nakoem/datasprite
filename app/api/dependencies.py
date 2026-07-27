@@ -26,10 +26,12 @@ from app.clients.mysql_client_manager import (
 from app.clients.qdrant_client_manager import qdrant_client_manager
 from app.repositories.es.value_es_repository import ValueESRepository
 from app.repositories.mysql.dw.dw_mysql_repository import DWMySQLRepository
+from app.repositories.mysql.meta.checkpoint_repository import CheckpointRepository
 from app.repositories.mysql.meta.conversation_repository import ConversationRepository
 from app.repositories.mysql.meta.meta_mysql_repository import MetaMySQLRepository
 from app.repositories.qdrant.column_qdrant_repository import ColumnQdrantRepository
 from app.repositories.qdrant.metric_qdrant_repository import MetricQdrantRepository
+from app.services.audit_service import AuditService
 from app.services.conversation_service import ConversationService
 from app.services.query_service import QueryService
 
@@ -119,6 +121,22 @@ async def get_conversation_service(
     """组装会话业务服务"""
 
     return ConversationService(conversation_repository)
+
+
+async def get_checkpoint_repository(
+    checkpointer: Annotated[MySQLSaver, Depends(get_checkpointer)],
+) -> CheckpointRepository:
+    """基于 MySQLSaver 单例创建 checkpoint 只读仓储"""
+    return CheckpointRepository(checkpointer)
+
+
+async def get_audit_service(
+    checkpoint_repo: Annotated[
+        CheckpointRepository, Depends(get_checkpoint_repository)
+    ],
+) -> AuditService:
+    """组装审计 + 回放业务服务"""
+    return AuditService(checkpoint_repo)
 
 
 # ── checkpointer 单例（应用级，非请求级）──

@@ -113,3 +113,68 @@ export type ConversationDetail = {
   updatedAt: string | null;
   messages: ChatMessage[];
 };
+
+// ── 审计日志 ──
+
+export type AuditStep = {
+  stepName: string;
+  stepOrder: number;
+  status: string;
+  timestamp: string | null;
+};
+
+export type AuditEntry = {
+  question: string;
+  sql: string | null;
+  executionTimeMs: number | null;
+  resultRowCount: number | null;
+  steps: AuditStep[];
+  startedAt: string | null;
+  finishedAt: string | null;
+};
+
+export type AuditTrailResponse = {
+  conversationId: string;
+  entries: AuditEntry[];
+};
+
+// ── Checkpoint 回放 ──
+
+export type CheckpointSummary = {
+  checkpointId: string;
+  parentCheckpointId: string | null;
+  stepNumber: number;
+  source: string;
+  nodeName: string | null;
+  timestamp: string | null;
+  hasSql: boolean;
+  hasResult: boolean;
+};
+
+export type CheckpointListResponse = {
+  conversationId: string;
+  checkpoints: CheckpointSummary[];
+  totalCount: number;
+};
+
+export type CheckpointDetail = {
+  checkpointId: string;
+  parentCheckpointId: string | null;
+  timestamp: string | null;
+  state: Record<string, unknown>;
+  metadata: Record<string, unknown>;
+  pendingWrites: Array<{ taskId: string; channel: string; value: unknown }>;
+};
+
+export type StateDiffEntry = {
+  field: string;
+  before: unknown | null;
+  after: unknown | null;
+  changed: boolean;
+};
+
+export type CheckpointDiffResponse = {
+  baseCheckpointId: string;
+  targetCheckpointId: string;
+  diffs: StateDiffEntry[];
+};

@@ -9,14 +9,17 @@ import {
   History,
   Leaf,
   MessageSquarePlus,
+  Search,
   Server,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AuditLog } from "./components/AuditLog";
 import { ClarificationPanel } from "./components/ClarificationPanel";
 import { Composer } from "./components/Composer";
 import { ConversationList } from "./components/ConversationList";
 import { EmptyState } from "./components/EmptyState";
 import { MessageBubble } from "./components/MessageBubble";
+import { ReplayPanel } from "./components/ReplayPanel";
 import {
   streamQuery,
   fetchConversations,
@@ -49,6 +52,8 @@ function upsertStep(steps: StepState[] = [], event: Extract<AgentEvent, { type: 
   return next;
 }
 
+type AppView = "chat" | "audit" | "replay";
+
 export default function App() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState("");
@@ -58,6 +63,7 @@ export default function App() {
   // 多轮对话 & 查询历史
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [view, setView] = useState<AppView>("chat");
 
   const isStreaming = Boolean(activeController);
   const canSubmit = draft.trim().length > 0 && !isStreaming;
@@ -204,6 +210,7 @@ export default function App() {
     setConversationId(null);
     setMessages([]);
     setDraft("");
+    setView("chat");
   };
 
   /** 加载历史会话 */
@@ -218,6 +225,7 @@ export default function App() {
       }));
       setConversationId(id);
       setMessages(loaded);
+      setView("chat");
     } catch {
       // 加载失败静默处理
     }
@@ -302,6 +310,39 @@ export default function App() {
                 onDelete={handleDeleteConversation}
               />
             </section>
+
+            {conversationId && (
+              <section className="border-t border-ink/10 pt-4">
+                <div className="mb-2 flex items-center gap-2 px-1 text-xs font-semibold uppercase tracking-[0.16em] text-ink/45">
+                  <Search className="h-3.5 w-3.5" />
+                  工具
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setView("audit")}
+                  className={cn(
+                    "flex w-full items-center gap-2 px-3 py-2 text-sm transition",
+                    view === "audit"
+                      ? "bg-moss/12 border-l-2 border-moss"
+                      : "text-ink/55 hover:bg-ink/5",
+                  )}
+                >
+                  审计日志
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setView("replay")}
+                  className={cn(
+                    "flex w-full items-center gap-2 px-3 py-2 text-sm transition",
+                    view === "replay"
+                      ? "bg-moss/12 border-l-2 border-moss"
+                      : "text-ink/55 hover:bg-ink/5",
+                  )}
+                >
+                  流程回放
+                </button>
+              </section>
+            )}
           </div>
 
           <div className="border-t border-ink/10 p-4">
@@ -334,6 +375,46 @@ export default function App() {
                 <div className="truncate text-sm font-semibold text-ink">DataSprite Agent</div>
                 <div className="truncate text-xs text-ink/45">FastAPI SSE / LangGraph</div>
               </div>
+              {conversationId && (
+                <div className="ml-4 flex items-center gap-0.5 border border-ink/10">
+                  <button
+                    type="button"
+                    onClick={() => setView("chat")}
+                    className={cn(
+                      "px-3 py-1.5 text-xs font-medium transition",
+                      view === "chat"
+                        ? "bg-ink text-parchment"
+                        : "text-ink/55 hover:bg-ink/5",
+                    )}
+                  >
+                    对话
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setView("audit")}
+                    className={cn(
+                      "px-3 py-1.5 text-xs font-medium transition",
+                      view === "audit"
+                        ? "bg-ink text-parchment"
+                        : "text-ink/55 hover:bg-ink/5",
+                    )}
+                  >
+                    审计日志
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setView("replay")}
+                    className={cn(
+                      "px-3 py-1.5 text-xs font-medium transition",
+                      view === "replay"
+                        ? "bg-ink text-parchment"
+                        : "text-ink/55 hover:bg-ink/5",
+                    )}
+                  >
+                    回放
+                  </button>
+                </div>
+              )}
             </div>
             <button
               type="button"
@@ -350,19 +431,27 @@ export default function App() {
           </header>
 
           <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain scrollbar-hide">
-            {messages.length === 0 ? (
-              <EmptyState examples={examples} onUseExample={(example) => setDraft(example)} />
-            ) : (
-              <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-6 lg:px-8">
-                {messages.map((message) => (
-                  <MessageBubble
-                    key={message.id}
-                    message={message}
-                    onClarificationSelect={handleClarificationSelect}
-                    onRetry={handleRetry}
-                  />
-                ))}
-              </div>
+            {view === "chat" && (
+              messages.length === 0 ? (
+                <EmptyState examples={examples} onUseExample={(example) => setDraft(example)} />
+              ) : (
+                <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-6 lg:px-8">
+                  {messages.map((message) => (
+                    <MessageBubble
+                      key={message.id}
+                      message={message}
+                      onClarificationSelect={handleClarificationSelect}
+                      onRetry={handleRetry}
+                    />
+                  ))}
+                </div>
+              )
+            )}
+            {view === "audit" && conversationId && (
+              <AuditLog conversationId={conversationId} />
+            )}
+            {view === "replay" && conversationId && (
+              <ReplayPanel conversationId={conversationId} />
             )}
           </div>
 

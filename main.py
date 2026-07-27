@@ -19,6 +19,7 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from prometheus_fastapi_instrumentator import Instrumentator
 
 from app.api.lifespan import lifespan
+from app.api.routers.audit_router import audit_router
 from app.api.routers.conversation_router import conversation_router
 from app.api.routers.query_router import query_router
 from app.core.context import request_id_ctx_var
@@ -42,6 +43,7 @@ app = FastAPI(
 # 把查询路由注册进应用；没有挂载时，/docs 和真实 HTTP 请求都访问不到该接口
 app.include_router(query_router)
 app.include_router(conversation_router)
+app.include_router(audit_router)
 
 # ── API 限流（双层令牌桶，实现见 app/core/rate_limiter.py）──────────
 # 最先注册 = 位于中间件栈最内层：429 会被外层的 Prometheus/OTel 统计到，
