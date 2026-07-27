@@ -49,20 +49,32 @@ pnpm lint       # 仅 tsc --noEmit 类型检查
 核心是 **LangGraph 工作流**（`app/agent/graph.py`）。节点间用 `DataAgentState`（TypedDict，会合并）传数据，外部依赖用 `DataAgentContext`（TypedDict，不合并）传递。执行链路：
 
 ```
-extract_keywords
-   ├─▶ recall_column  (Qdrant 向量检索字段)
-   ├─▶ recall_value   (ES 全文检索字段取值)
-   └─▶ recall_metric  (Qdrant 向量检索指标)
-         ▼ (三路召回汇合)
-merge_retrieved_info  (按 id 回 Meta MySQL 补齐结构)
-   ├─▶ filter_table   (LLM 筛候选表)
-   └─▶ filter_metric  (LLM 筛候选指标)
-         ▼
-add_extra_context  (补日期 + 从 DW MySQL 读方言/版本)
-   ▼
-generate_sql ─▶ validate_sql ─┬─(error is None)──────────────▶ run_sql ─▶ END
-                              └─(有 error 且重试<3)─▶ correct_sql ─(回 validate_sql)
+classify_intent  (LLM 意图分类：问数 / 闲聊 / 模糊)
+   ├─(模糊)─▶ ask_clarification ─▶ END  (追问澄清后结束)
+   └─(问数)─▶ extract_keywords  (LLM 提取关键词)
+                 ├─▶ recall_column  (Qdrant 向量检索字段)
+                 ├─▶ recall_value   (ES 全文检索字段取值)
+                 └─▶ recall_metric  (Qdrant 向量检索指标)
+                       ▼ (三路召回汇合)
+              merge_retrieved_info  (按 id 回 Meta MySQL 补齐结构)
+                 ├─▶ filter_table   (LLM 筛候选表)
+                 └─▶ filter_metric  (LLM 筛候选指标)
+                       ▼
+              add_extra_context  (补日期 + 从 DW MySQL 读方言/版本)
+                 ▼
+              dream  (记忆压缩，防上下文溢出)
+                 ▼
+              generate_sql ─▶ validate_sql ─┬─(ok)──────▶ run_sql ─▶ summarize_result
+                                            └─(err)─▶ correct_sql ─(回 validate_sql，最多3次)
+                                                               ▼
+                                                    summarize_result  (LLM 生成 AI 摘要 + 口径说明)
+                                                         ▼
+                                                    semantic_validate  (RAG 语义校验 + 引用补全)
+                                                         ▼
+                                                       END
 ```
+
+**17 节点全链路**：`classify_intent` → `ask_clarification` → `extract_keywords` → `recall_column` ∥ `recall_value` ∥ `recall_metric` → `merge_retrieved_info` → `filter_table` ∥ `filter_metric` → `add_extra_context` → `dream` → `generate_sql` → `validate_sql` ⇄ `correct_sql` → `run_sql` → `summarize_result` → `semantic_validate`
 
 **SQL 修正闭环**：`validate_sql` 用 `EXPLAIN` 校验，失败且 `correct_retry_count < MAX_CORRECT_RETRIES`(=3) 时进 `correct_sql` 再回 `validate_sql`；超限则直接 `run_sql` 让错误暴露给用户。条件路由逻辑在 `graph.py` 的 `add_conditional_edges`。
 

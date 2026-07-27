@@ -6,9 +6,11 @@ FastAPI 依赖组装
 都收敛在这里，避免 HTTP 处理函数直接感知底层基础设施。
 """
 
+import os
 from typing import Annotated
 
-from fastapi import Depends
+from fastapi import Depends, HTTPException, Security
+from fastapi.security import APIKeyHeader
 from langchain_huggingface import HuggingFaceEndpointEmbeddings
 from langgraph.graph.state import CompiledStateGraph
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -30,6 +32,20 @@ from app.repositories.qdrant.column_qdrant_repository import ColumnQdrantReposit
 from app.repositories.qdrant.metric_qdrant_repository import MetricQdrantRepository
 from app.services.conversation_service import ConversationService
 from app.services.query_service import QueryService
+
+# ── /api/ask 外部调用鉴权 ────────────────────────────────
+
+_api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+
+
+async def verify_api_key(api_key: str = Security(_api_key_header)):
+    """校验 X-API-Key 请求头，未配置 API_KEY 时跳过校验（开发模式）。"""
+    expected = os.getenv("API_KEY")
+    if not expected:
+        # 未配置 API_KEY → 开发模式，不拦截
+        return
+    if api_key != expected:
+        raise HTTPException(status_code=401, detail="Invalid API Key")
 
 
 async def get_meta_session():

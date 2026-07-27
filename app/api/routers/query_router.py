@@ -4,6 +4,8 @@
 负责定义前端访问的 `/api/query` 接口，把 HTTP 请求交给 QueryService，
 并把问数智能体执行过程以 SSE 形式持续返回给客户端。
 路由层只处理请求体、依赖声明和响应类型，不直接创建 Repository 或执行图节点。
+
+同时提供 `/api/ask` 同步接口，供 Dify / 飞书 / 钉钉等外部系统通过 JSON 调用。
 """
 
 from typing import Annotated
@@ -11,8 +13,10 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 from starlette.responses import StreamingResponse
 
-from app.api.dependencies import get_query_service
+from app.api.dependencies import get_query_service, verify_api_key
+from app.api.schemas.ask_schema import AskRequest, AskResponse
 from app.api.schemas.query_schema import QuerySchema
+from app.core.log import logger
 from app.services.query_service import QueryService
 
 # 当前模块只维护查询相关接口，避免后续所有 API 都挤在 main.py 中
@@ -34,3 +38,18 @@ async def query_handler(
         query_service.query(query.query, conversation_id=query.conversation_id),
         media_type="text/event-stream",
     )
+
+
+@query_router.post("/api/ask")
+async def ask_handler(
+    body: AskRequest,
+    query_service: Annotated[QueryService, Depends(get_query_service)],
+    _: None = Depends(verify_api_key),
+):
+    """同步问数接口：接收自然语言 → 跑完整管线 → 返回 JSON
+
+    外部系统通过 X-API-Key 请求头鉴权后，一次调用拿到 SQL + 数据 + AI 摘要。
+    """
+    logger.info("外部 API 调用 /api/ask | query={}", body.query[:200])
+    result = await query_service.query_sync(body.query)
+    return AskResponse(**result)

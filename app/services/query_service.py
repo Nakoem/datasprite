@@ -55,34 +55,31 @@ class QueryService:
         # LangGraph 编译图（可选带 checkpointer）
         self.compiled_graph = compiled_graph or graph
 
-    async def query(self, query: str, conversation_id: str | None = None):
-        """执行一次问数工作流，并逐段产出 SSE 消息"""
+    async def _run_graph(self, query: str, conversation_id: str | None = None):
+        """内部共享方法：执行 LangGraph 管线，逐段 yield 原始 dict chunk。
 
-        # 如果没有会话 ID，生成新 UUID 并创建会话
+        query() 将其包装为 SSE，query_sync() 直接收集为 dict。
+        避免 SSE 序列化/反序列化来回折腾。
+        """
         if not conversation_id:
             conversation_id = str(uuid.uuid4())
 
-        # 确保会话存在（首次创建或延续已有会话）
         await self.conversation_service.ensure_conversation(conversation_id, query)
 
-        # 加载历史消息用于多轮对话上下文
         conversation_history = await self.conversation_service.get_history_for_llm(
             conversation_id
         )
 
-        # 保存用户消息
         await self.conversation_service.save_message(
             Message(conversation_id=conversation_id, role="user", content=query)
         )
 
-        # State 只放会被图节点读写和合并的业务数据，外部工具对象不塞进 State
         state = DataAgentState(
             query=query,
             correct_retry_count=0,
             conversation_id=conversation_id,
             conversation_history=conversation_history,
         )
-        # Context 保存本次图执行需要复用的外部依赖，节点通过 runtime.context 读取
         context = DataAgentContext(
             column_qdrant_repository=self.column_qdrant_repository,
             embedding_client=self.embedding_client,
@@ -92,7 +89,6 @@ class QueryService:
             dw_mysql_repository=self.dw_mysql_repository,
         )
 
-        # 收集图执行过程中的关键信息用于持久化
         collected_sql: str | None = None
         collected_result: dict | list | None = None
         collected_summary: str | None = None
@@ -101,8 +97,6 @@ class QueryService:
         assistant_content = ""
 
         try:
-            # stream_mode="custom" 对应节点内部 writer(...) 写出的进度消息
-            # config 传入 thread_id（复用 conversation_id），checkpointer 按线程存档
             astream_config = {"configurable": {"thread_id": conversation_id}}
             async for chunk in self.compiled_graph.astream(
                 input=state,
@@ -110,42 +104,36 @@ class QueryService:
                 stream_mode="custom",
                 config=astream_config,
             ):
-                # 收集 SQL 和结果用于持久化
                 if isinstance(chunk, dict):
-                    if chunk.get("type") == "progress":
+                    chunk_type = chunk.get("type", "")
+                    if chunk_type == "progress":
                         step = chunk.get("step", "")
                         status = chunk.get("status", "")
                         if status == "running":
                             assistant_content = f"正在执行：{step}"
                         elif status == "retry":
                             assistant_content = f"正在{step}（重试中）"
-                    elif chunk.get("type") == "result":
+                    elif chunk_type == "result":
                         collected_result = chunk.get("data")
                         collected_sql = chunk.get("sql")
                         assistant_content = "查询完成"
-                    elif chunk.get("type") == "summary":
+                    elif chunk_type == "summary":
                         collected_summary = chunk.get("summary")
                         collected_metric_definitions = chunk.get("metrics")
                         collected_column_sources = chunk.get("tables")
                         assistant_content = "查询完成"
-                    elif chunk.get("type") == "clarification":
+                    elif chunk_type == "clarification":
                         assistant_content = "需要确认一下～"
 
-                # SSE 要求每条消息以 data: 开头，并以两个换行符结束
-                # ensure_ascii=False 保留中文进度文案，default=str 兜底处理日期等非 JSON 类型
-                yield f"data: {json.dumps(chunk, ensure_ascii=False, default=str)}\n\n"
-
-            # 图执行完成后，从最终 state 中获取 SQL（如果有的话）
-            # 注意：graph.astream 不直接返回最终 state，但我们可以从 chunk 中推断
+                # yield 原始 dict 给调用方（query → SSE 包装 / query_sync → 直接收集）
+                yield chunk
 
         except Exception as e:
             assistant_content = f"查询失败：{str(e)}"
-            # 流式接口已经开始返回后不能再改 HTTP 状态码，因此把异常也包装成一条 SSE 消息
             error = {"type": "error", "message": str(e)}
-            yield f"data: {json.dumps(error, ensure_ascii=False, default=str)}\n\n"
+            yield error
 
         finally:
-            # 持久化助手消息（包含 SQL、结果和摘要）
             await self.conversation_service.save_message(
                 Message(
                     conversation_id=conversation_id,
@@ -158,3 +146,43 @@ class QueryService:
                     column_sources=collected_column_sources,
                 )
             )
+
+    async def query_sync(self, query: str) -> dict:
+        """同步版问数：直接消费 _run_graph 的 dict chunk，一次性返回。
+
+        供 /api/ask 等外部集成接口使用，返回 SQL + 数据 + AI 摘要。
+        """
+        result = {
+            "sql": None,
+            "data": None,
+            "summary": None,
+            "metric_definitions": None,
+            "column_sources": None,
+            "error": None,
+        }
+
+        try:
+            async for chunk in self._run_graph(query):
+                if not isinstance(chunk, dict):
+                    continue
+
+                chunk_type = chunk.get("type", "")
+                if chunk_type == "result":
+                    result["sql"] = chunk.get("sql")
+                    result["data"] = chunk.get("data")
+                elif chunk_type == "summary":
+                    result["summary"] = chunk.get("summary")
+                    result["metric_definitions"] = chunk.get("metrics")
+                    result["column_sources"] = chunk.get("tables")
+                elif chunk_type == "error":
+                    result["error"] = chunk.get("message")
+        except Exception as e:
+            result["error"] = str(e)
+
+        return result
+
+    async def query(self, query: str, conversation_id: str | None = None):
+        """执行一次问数工作流，并逐段产出 SSE 消息"""
+
+        async for chunk in self._run_graph(query, conversation_id):
+            yield f"data: {json.dumps(chunk, ensure_ascii=False, default=str)}\n\n"

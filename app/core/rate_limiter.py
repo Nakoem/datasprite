@@ -17,8 +17,9 @@ from app.clients.redis_client_manager import redis_client_manager
 from app.conf.app_config import app_config
 from app.core.log import logger
 
-# 命中该前缀的请求走收紧档令牌桶（LLM 链路昂贵）
-_QUERY_PATH_PREFIX = "/api/query"
+# 命中这些前缀的请求走收紧档令牌桶（LLM 链路昂贵）
+# /api/query（前端 SSE）和 /api/ask（外部 JSON）都跑完整 17 节点管线，成本一致
+_QUERY_PATH_PREFIXES = ("/api/query", "/api/ask")
 
 # 限流检查硬超时（秒）：Redis 假死（连接建立但不响应，如 Docker 代理端口）
 # 不会快速抛错，没有这层兜底 await 会永久挂起，限流器反把全服务吊死
@@ -125,7 +126,7 @@ async def rate_limit_middleware(request: Request, call_next):
     # 注意：部署在反向代理后面时 request.client.host 拿到的是代理 IP，
     # 需改读 X-Forwarded-For；当前直连 uvicorn，无此问题
     ip = request.client.host if request.client else "unknown"
-    is_query = path.startswith(_QUERY_PATH_PREFIX)
+    is_query = path.startswith(_QUERY_PATH_PREFIXES)
     bucket = cfg.per_ip_query if is_query else cfg.per_ip
     tier = "query" if is_query else "common"
 
