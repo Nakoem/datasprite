@@ -1,0 +1,16 @@
+# DataSprite 后端 Docker 镜像
+FROM python:3.14-slim
+
+WORKDIR /app
+
+# 先装 uv 和依赖（利用 Docker 层缓存，代码不改就不重新装）
+RUN pip install uv --quiet
+
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --quiet
+
+# 拷贝源码
+COPY . .
+
+# .env 不打进镜像，运行时由 docker-compose 注入
+CMD ["uv", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

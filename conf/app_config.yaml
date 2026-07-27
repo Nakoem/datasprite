@@ -10,36 +10,36 @@ logging:
     level: INFO
 
 db_meta:
-  host: localhost
-  port: 3306
+  host: ${oc.env:DB_HOST,localhost}
+  port: ${oc.env:DB_PORT,3306}
   user: ${oc.env:DB_USER}
   password: ${oc.env:DB_PASSWORD}
   database: meta
 
 db_dw:
-  host: localhost
-  port: 3306
+  host: ${oc.env:DB_HOST,localhost}
+  port: ${oc.env:DB_PORT,3306}
   user: ${oc.env:DB_USER}
   password: ${oc.env:DB_PASSWORD}
   database: dw
 
 qdrant:
-  host: localhost
-  port: 6333
+  host: ${oc.env:QDRANT_HOST,localhost}
+  port: ${oc.env:QDRANT_PORT,6333}
   embedding_size: 1024
 
 embedding:
-  host: localhost
-  port: 8081
+  host: ${oc.env:EMBEDDING_HOST,localhost}
+  port: ${oc.env:EMBEDDING_PORT,8081}
   model: BAAI/bge-large-zh-v1.5
 
 redis:
-  host: localhost
-  port: 6380
+  host: ${oc.env:REDIS_HOST,localhost}
+  port: ${oc.env:REDIS_PORT,6380}
 
 es:
-  host: localhost
-  port: 9201
+  host: ${oc.env:ES_HOST,localhost}
+  port: ${oc.env:ES_PORT,9201}
   index_name: data_agent
 
 llm:

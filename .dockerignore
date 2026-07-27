@@ -1,0 +1,10 @@
+# Docker build 忽略清单
+.venv/
+frontend/
+.git/
+__pycache__/
+*.pyc
+.env
+logs/
+*.log
+node_modules/

@@ -66,6 +66,14 @@ class CheckpointRepository:
         if t.parent_config is not None:
             parent_id = t.parent_config["configurable"]["checkpoint_id"]
 
+        # updated_channels 记录本次 checkpoint 修改了哪些 channel，
+        # 可用于推断是哪个节点执行了（比 pending_writes 的 task_id UUID 更有意义）
+        updated_channels: list[str] = list(cp.get("updated_channels") or [])
+        # pending_writes 的 channel 名作为后备（updated_channels 为空时用）
+        pending_channels: list[str] = list({
+            pw[1] for pw in (t.pending_writes or [])
+        })
+
         return CheckpointInfo(
             checkpoint_id=cp["id"],
             parent_checkpoint_id=parent_id,
@@ -74,5 +82,7 @@ class CheckpointRepository:
             node_name=node_name,
             timestamp=cp.get("ts"),
             channel_values=cp.get("channel_values", {}),
+            updated_channels=updated_channels,
+            pending_channels=pending_channels,
             metadata=meta,
         )

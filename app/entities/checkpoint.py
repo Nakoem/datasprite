@@ -19,6 +19,8 @@ class CheckpointInfo:
     node_name: str | None = None
     timestamp: str | None = None
     channel_values: dict = field(default_factory=dict)
+    updated_channels: list[str] = field(default_factory=list)
+    pending_channels: list[str] = field(default_factory=list)
     metadata: dict = field(default_factory=dict)
 
 

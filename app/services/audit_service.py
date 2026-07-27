@@ -17,6 +17,28 @@ _MAX_RESULT_ROWS_IN_AUDIT = 100
 _MAX_SANITIZE_DEPTH = 20
 
 
+def _step_label(cp) -> str:
+    """从 updated_channels 生成可读步骤名（替代 pending_writes 的 UUID）。"""
+    channels = getattr(cp, "updated_channels", None) or []
+    if channels:
+        # 去掉 LangGraph 内部前缀 "branch:to:"，只保留可读部分
+        cleaned = [ch.replace("branch:to:", "") for ch in channels]
+        if len(cleaned) == 1:
+            return f"→ {cleaned[0]}"
+        return f"→ {cleaned[0]} | " + ", ".join(cleaned[1:5])
+
+    # updated_channels 为空时的后备方案
+    pending = getattr(cp, "pending_channels", None) or []
+    if pending:
+        cleaned = [ch.replace("branch:to:", "") for ch in pending]
+        return f"→ {cleaned[0]}"
+
+    # 既没有更新也没有待执行 → 最终节点
+    if cp.node_name is None:
+        return "→ 完成"
+    return f"step_{cp.step_number}"
+
+
 def _sanitize(obj: object, _depth: int = 0) -> object:
     """递归将 Python 对象转为 JSON-safe 类型。
 
@@ -77,7 +99,11 @@ class AuditService:
 
         return {
             "conversation_id": conversation_id,
-            "entries": [self._entry_to_dict(e) for e in entries],
+            "entries": [
+                self._entry_to_dict(e)
+                for e in entries
+                if e.question  # 过滤初始 checkpoint（无 query 的假条目）
+            ],
         }
 
     def _build_audit_entry(self, checkpoints: list) -> AuditEntry:
@@ -112,9 +138,10 @@ class AuditService:
 
         steps = []
         for cp in checkpoints:
-            node_name = cp.node_name or f"step_{cp.step_number}"
+            # 用 updated_channels 生成可读步骤名（比 pending_writes 的 UUID 有意义）
+            name = _step_label(cp)
             steps.append({
-                "step_name": node_name,
+                "step_name": name,
                 "step_order": cp.step_number,
                 "status": "success",
                 "timestamp": cp.timestamp,
