@@ -181,6 +181,7 @@ class AuditService:
                 "source": cp.source,
                 "step_label": _step_label(cp),
                 "timestamp": cp.timestamp,
+                "query": cp.channel_values.get("query"),
                 "has_sql": bool(cp.channel_values.get("sql")),
                 "has_result": bool(cp.channel_values.get("result")),
             }

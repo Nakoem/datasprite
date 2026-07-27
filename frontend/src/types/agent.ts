@@ -147,6 +147,7 @@ export type CheckpointSummary = {
   source: string;
   step_label: string;
   timestamp: string | null;
+  query: string | null;
   has_sql: boolean;
   has_result: boolean;
 };

@@ -3,11 +3,14 @@
  *
  * 时间线滑块 + State 快照查看 + 字段级 Diff 对比，
  * 用于调试 LangGraph 工作流执行过程。
+ * 多条查询时按 query 分组展示，避免时间线重叠。
  */
 import {
   AlertTriangle,
   ArrowLeft,
   ArrowRight,
+  ChevronDown,
+  ChevronRight,
   GitBranch,
   Layers,
   Play,
@@ -34,6 +37,12 @@ type ReplayPanelProps = {
 type LoadState = "loading" | "loaded" | "error" | "empty";
 type PanelTab = "state" | "diff";
 
+type QueryGroup = {
+  query: string;
+  startIndex: number;
+  checkpoints: CheckpointSummary[];
+};
+
 export function ReplayPanel({ conversationId }: ReplayPanelProps) {
   const [loadState, setLoadState] = useState<LoadState>("loading");
   const [checkpoints, setCheckpoints] = useState<CheckpointSummary[]>([]);
@@ -48,6 +57,11 @@ export function ReplayPanel({ conversationId }: ReplayPanelProps) {
   const [diff, setDiff] = useState<CheckpointDiffResponse | null>(null);
   const [diffLoading, setDiffLoading] = useState(false);
 
+  // 分组折叠：undefined = 按默认折叠（多查询默认全折叠）
+  const [collapsed, setCollapsed] = useState<Record<number, boolean>>({});
+  const isGroupOpen = (gi: number) =>
+    isMultiQuery ? (collapsed[gi] ?? false) : true;
+
   const loadList = useCallback(async () => {
     setLoadState("loading");
     try {
@@ -56,7 +70,6 @@ export function ReplayPanel({ conversationId }: ReplayPanelProps) {
         setLoadState("empty");
       } else {
         setCheckpoints(result.checkpoints);
-        // 默认选中最后一步：State 看最终态，Diff 看开始→完成全流程
         setSelectedIndex(result.checkpoints.length - 1);
         setBaseIndex(0);
         setLoadState("loaded");
@@ -71,10 +84,51 @@ export function ReplayPanel({ conversationId }: ReplayPanelProps) {
     loadList();
   }, [loadList]);
 
+  // 按 query 字段分组（query=null 的初始步骤归入第一条查询）
+  const queryGroups = useMemo<QueryGroup[]>(() => {
+    const groups: QueryGroup[] = [];
+    let current: CheckpointSummary[] = [];
+    let lastQuery: string | null = null;
+
+    for (let i = 0; i < checkpoints.length; i++) {
+      const cp = checkpoints[i];
+      const q = cp.query || null;
+      // query 从 null→有值 或 有值→不同值 时切新组
+      if (q && q !== lastQuery) {
+        if (current.length > 0) {
+          groups.push({
+            query: lastQuery ?? "",
+            startIndex: i - current.length,
+            checkpoints: current,
+          });
+        }
+        current = [cp];
+        lastQuery = q;
+      } else {
+        current.push(cp);
+      }
+    }
+    if (current.length > 0) {
+      groups.push({
+        query: lastQuery ?? "",
+        startIndex: checkpoints.length - current.length,
+        checkpoints: current,
+      });
+    }
+
+    // 合并 query 为空的第一组到下一组（__start__ 归入第一条查询）
+    if (groups.length > 1 && !groups[0].query) {
+      const emptyGroup = groups.shift()!;
+      groups[0].checkpoints = [...emptyGroup.checkpoints, ...groups[0].checkpoints];
+      groups[0].startIndex = emptyGroup.startIndex;
+    }
+
+    return groups;
+  }, [checkpoints]);
+
   // 滑块变化 → 加载详情
   useEffect(() => {
     if (checkpoints.length === 0) return;
-
     const cp = checkpoints[selectedIndex];
     if (!cp) return;
 
@@ -110,13 +164,15 @@ export function ReplayPanel({ conversationId }: ReplayPanelProps) {
       .finally(() => setDiffLoading(false));
   }, [conversationId, checkpoints, selectedIndex, baseIndex, tab]);
 
-  // tick 标签精简：只显示节点名，"|" 后面的字段名省略
   const shortLabel = (label: string) => label.split(" | ")[0];
 
   const selected = useMemo(
     () => checkpoints[selectedIndex] ?? null,
     [checkpoints, selectedIndex],
   );
+
+  const toggleGroup = (gi: number) =>
+    setCollapsed((prev) => ({ ...prev, [gi]: !prev[gi] }));
 
   // ── 加载 / 错误 / 空状态 ──
 
@@ -157,23 +213,25 @@ export function ReplayPanel({ conversationId }: ReplayPanelProps) {
     );
   }
 
+  const isMultiQuery = queryGroups.length > 1;
+
   // ── 正常渲染 ──
 
   return (
     <div className="flex flex-col h-full">
-      {/* 时间线滑块 */}
-      <div className="border-b border-ink/10 bg-white/80 px-6 py-5">
-        <div className="flex items-center gap-3 mb-3">
+      {/* 顶部：全局滑块 + 当前选中摘要 */}
+      <div className="border-b border-ink/10 bg-white/80 px-6 py-4">
+        <div className="flex items-center gap-3 mb-2">
           <Play className="h-4 w-4 text-moss" />
           <span className="text-sm font-semibold text-ink/70">
             Checkpoint 时间线
           </span>
           <span className="text-xs text-ink/40">
-            {checkpoints.length} 个步骤
+            {checkpoints.length} 步 · {queryGroups.length} 次查询
           </span>
         </div>
 
-        {/* 滑块 */}
+        {/* 全局滑块（多查询时用） */}
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -208,51 +266,17 @@ export function ReplayPanel({ conversationId }: ReplayPanelProps) {
           </button>
         </div>
 
-        {/* tick 标记 — 奇偶交错上下排列，避免重叠 */}
-        <div className="relative mt-3" style={{ height: "3.5rem" }}>
-          {checkpoints.map((cp, i) => {
-            const pct =
-              checkpoints.length === 1
-                ? 50
-                : (i / (checkpoints.length - 1)) * 100;
-            const isTop = i % 2 === 0;
-            return (
-              <div
-                key={cp.checkpoint_id}
-                className="absolute -translate-x-1/2"
-                style={{
-                  left: `${pct}%`,
-                  top: isTop ? 0 : "50%",
-                }}
-              >
-                {/* 小圆点 */}
-                <div
-                  className={`mx-auto mb-0.5 h-1.5 w-1.5 rounded-full ${
-                    i === selectedIndex ? "bg-moss" : "bg-ink/20"
-                  }`}
-                />
-                <button
-                  type="button"
-                  onClick={() => setSelectedIndex(i)}
-                  className={`block whitespace-nowrap text-[10px] leading-tight transition ${
-                    i === selectedIndex
-                      ? "text-ink/80 font-semibold"
-                      : "text-ink/35 hover:text-ink/55"
-                  }`}
-                >
-                  {shortLabel(cp.step_label)}
-                </button>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* 当前选中 checkpoint 的摘要 */}
+        {/* 当前选中摘要 */}
         {selected && (
-          <div className="mt-2 flex flex-wrap gap-3 text-xs text-ink/45">
-            <span>#{selected.step_number}</span>
+          <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-ink/45">
+            <span className="font-medium text-ink/60">
+              #{selected.step_number}
+            </span>
+            <span>{shortLabel(selected.step_label)}</span>
             {selected.timestamp && (
-              <span>{formatTime(new Date(selected.timestamp).getTime())}</span>
+              <span>
+                {formatTime(new Date(selected.timestamp).getTime())}
+              </span>
             )}
             {selected.has_sql && (
               <span className="text-moss font-medium">含 SQL</span>
@@ -264,9 +288,72 @@ export function ReplayPanel({ conversationId }: ReplayPanelProps) {
         )}
       </div>
 
-      {/* 内容区：State / Diff 切换 */}
+      {/* 按查询分组的时间线 */}
+      <div className="border-b border-ink/10 bg-white/60 px-6 py-3 space-y-1 max-h-64 overflow-auto">
+        {queryGroups.map((group, gi) => {
+          const cps = group.checkpoints;
+          const isOpen = isGroupOpen(gi);
+
+          return (
+            <div key={gi} className={isMultiQuery ? "border border-ink/8 bg-white/70" : ""}>
+              {/* 分组标题 — 单查询时省略 */}
+              {isMultiQuery && (
+                <button
+                  type="button"
+                  onClick={() => toggleGroup(gi)}
+                  className="w-full flex items-center gap-2 px-3 py-2 hover:bg-ink/[0.03] transition text-left"
+                >
+                  {isOpen ? (
+                    <ChevronDown className="h-3.5 w-3.5 text-ink/35 shrink-0" />
+                  ) : (
+                    <ChevronRight className="h-3.5 w-3.5 text-ink/35 shrink-0" />
+                  )}
+                  <span className="text-xs font-semibold text-ink/60">
+                    查询 #{gi + 1}
+                  </span>
+                  <span className="text-xs text-ink/50 truncate max-w-[320px]">
+                    {group.query}
+                  </span>
+                  <span className="text-[10px] text-ink/35 ml-auto shrink-0">
+                    {cps.length} 步
+                  </span>
+                </button>
+              )}
+
+              {/* 步骤标签行 */}
+              {isOpen && (
+                <div className={isMultiQuery ? "px-3 pb-2.5" : ""}>
+                  <div className="flex flex-wrap gap-x-1 gap-y-0.5">
+                    {cps.map((cp, ci) => {
+                      const actualIdx = group.startIndex + ci;
+                      const isActive = actualIdx === selectedIndex;
+                      return (
+                        <button
+                          key={cp.checkpoint_id}
+                          type="button"
+                          onClick={() =>
+                            setSelectedIndex(actualIdx)
+                          }
+                          className={`shrink-0 text-[10px] px-1.5 py-0.5 rounded transition ${
+                            isActive
+                              ? "bg-moss/15 text-moss font-semibold"
+                              : "text-ink/40 hover:bg-ink/5 hover:text-ink/60"
+                          }`}
+                        >
+                          {shortLabel(cp.step_label)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* 内容区：State / Diff */}
       <div className="flex-1 overflow-auto">
-        {/* Tab 切换 */}
         <div className="flex items-center border-b border-ink/10 bg-white/60 px-6">
           <button
             type="button"
@@ -294,7 +381,7 @@ export function ReplayPanel({ conversationId }: ReplayPanelProps) {
           </button>
         </div>
 
-        {/* State 内容 */}
+        {/* State */}
         {tab === "state" && (
           <div className="p-6">
             {detailLoading ? (
@@ -303,10 +390,7 @@ export function ReplayPanel({ conversationId }: ReplayPanelProps) {
               </div>
             ) : detail ? (
               <div className="space-y-3">
-                <StateJsonTree
-                  data={detail.state}
-                  maxDepth={2}
-                />
+                <StateJsonTree data={detail.state} maxDepth={2} />
               </div>
             ) : (
               <p className="text-sm text-ink/40 text-center py-12">
@@ -316,10 +400,9 @@ export function ReplayPanel({ conversationId }: ReplayPanelProps) {
           </div>
         )}
 
-        {/* Diff 内容 */}
+        {/* Diff */}
         {tab === "diff" && (
           <div className="p-6">
-            {/* Diff 基准选择 */}
             <div className="flex items-center gap-4 mb-4 text-xs">
               <label className="flex items-center gap-1.5 text-ink/55">
                 Base:
@@ -330,8 +413,7 @@ export function ReplayPanel({ conversationId }: ReplayPanelProps) {
                 >
                   {checkpoints.map((cp, i) => (
                     <option key={cp.checkpoint_id} value={i}>
-                      #{cp.step_number}{" "}
-                      {`- ${cp.step_label}`}
+                      #{cp.step_number} {shortLabel(cp.step_label)}
                     </option>
                   ))}
                 </select>
@@ -341,15 +423,12 @@ export function ReplayPanel({ conversationId }: ReplayPanelProps) {
                 Target:
                 <select
                   value={selectedIndex}
-                  onChange={(e) =>
-                    setSelectedIndex(Number(e.target.value))
-                  }
+                  onChange={(e) => setSelectedIndex(Number(e.target.value))}
                   className="border border-ink/15 bg-white px-2 py-1 text-xs focus:outline-none focus:border-moss"
                 >
                   {checkpoints.map((cp, i) => (
                     <option key={cp.checkpoint_id} value={i}>
-                      #{cp.step_number}{" "}
-                      {`- ${cp.step_label}`}
+                      #{cp.step_number} {shortLabel(cp.step_label)}
                     </option>
                   ))}
                 </select>
@@ -388,17 +467,13 @@ export function ReplayPanel({ conversationId }: ReplayPanelProps) {
                     {d.changed && (
                       <div className="grid grid-cols-2 gap-3 text-[11px] font-mono">
                         <div>
-                          <span className="text-tomato/70">
-                            - Before:
-                          </span>
+                          <span className="text-tomato/70">- Before:</span>
                           <pre className="mt-0.5 text-ink/50 line-clamp-3">
                             {JSON.stringify(d.before, null, 2)}
                           </pre>
                         </div>
                         <div>
-                          <span className="text-moss">
-                            + After:
-                          </span>
+                          <span className="text-moss">+ After:</span>
                           <pre className="mt-0.5 text-ink/70 line-clamp-3">
                             {JSON.stringify(d.after, null, 2)}
                           </pre>
