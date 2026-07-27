@@ -116,20 +116,20 @@ export function AuditLog({ conversationId }: AuditLogProps) {
             </p>
             <p className="mt-1 text-sm text-ink/60">{entry.question}</p>
             <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-ink/45">
-              {entry.executionTimeMs != null && (
+              {entry.execution_time_ms != null && (
                 <span className="inline-flex items-center gap-1">
                   <Clock className="h-3.5 w-3.5" />
-                  {(entry.executionTimeMs / 1000).toFixed(1)}s
+                  {(entry.execution_time_ms / 1000).toFixed(1)}s
                 </span>
               )}
-              {entry.resultRowCount != null && (
+              {entry.result_row_count != null && (
                 <span className="inline-flex items-center gap-1">
                   <Table2 className="h-3.5 w-3.5" />
-                  {entry.resultRowCount} 行
+                  {entry.result_row_count} 行
                 </span>
               )}
-              {entry.startedAt && (
-                <span>{formatTime(new Date(entry.startedAt).getTime())}</span>
+              {entry.started_at && (
+                <span>{formatTime(new Date(entry.started_at).getTime())}</span>
               )}
             </div>
           </div>
@@ -148,14 +148,14 @@ export function AuditLog({ conversationId }: AuditLogProps) {
               <tbody>
                 {entry.steps.map((step) => (
                   <tr
-                    key={step.stepOrder}
+                    key={step.step_order}
                     className="border-b border-ink/5 hover:bg-ink/[0.02]"
                   >
                     <td className="px-5 py-1.5 text-ink/40">
-                      {step.stepOrder}
+                      {step.step_order}
                     </td>
                     <td className="px-5 py-1.5 text-ink/70">
-                      {step.stepName}
+                      {step.step_name}
                     </td>
                     <td className="px-5 py-1.5">
                       <span className="inline-flex items-center gap-1 text-moss">

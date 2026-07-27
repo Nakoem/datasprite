@@ -117,8 +117,8 @@ export type ConversationDetail = {
 // ── 审计日志 ──
 
 export type AuditStep = {
-  stepName: string;
-  stepOrder: number;
+  step_name: string;
+  step_order: number;
   status: string;
   timestamp: string | null;
 };
@@ -126,44 +126,44 @@ export type AuditStep = {
 export type AuditEntry = {
   question: string;
   sql: string | null;
-  executionTimeMs: number | null;
-  resultRowCount: number | null;
+  execution_time_ms: number | null;
+  result_row_count: number | null;
   steps: AuditStep[];
-  startedAt: string | null;
-  finishedAt: string | null;
+  started_at: string | null;
+  finished_at: string | null;
 };
 
 export type AuditTrailResponse = {
-  conversationId: string;
+  conversation_id: string;
   entries: AuditEntry[];
 };
 
 // ── Checkpoint 回放 ──
 
 export type CheckpointSummary = {
-  checkpointId: string;
-  parentCheckpointId: string | null;
-  stepNumber: number;
+  checkpoint_id: string;
+  parent_checkpoint_id: string | null;
+  step_number: number;
   source: string;
-  stepLabel: string;
+  step_label: string;
   timestamp: string | null;
-  hasSql: boolean;
-  hasResult: boolean;
+  has_sql: boolean;
+  has_result: boolean;
 };
 
 export type CheckpointListResponse = {
-  conversationId: string;
+  conversation_id: string;
   checkpoints: CheckpointSummary[];
-  totalCount: number;
+  total_count: number;
 };
 
 export type CheckpointDetail = {
-  checkpointId: string;
-  parentCheckpointId: string | null;
+  checkpoint_id: string;
+  parent_checkpoint_id: string | null;
   timestamp: string | null;
   state: Record<string, unknown>;
   metadata: Record<string, unknown>;
-  pendingWrites: Array<{ taskId: string; channel: string; value: unknown }>;
+  pending_writes: Array<{ task_id: string; channel: string; value: unknown }>;
 };
 
 export type StateDiffEntry = {
@@ -174,7 +174,7 @@ export type StateDiffEntry = {
 };
 
 export type CheckpointDiffResponse = {
-  baseCheckpointId: string;
-  targetCheckpointId: string;
+  base_checkpoint_id: string;
+  target_checkpoint_id: string;
   diffs: StateDiffEntry[];
 };

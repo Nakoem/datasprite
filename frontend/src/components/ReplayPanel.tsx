@@ -79,7 +79,7 @@ export function ReplayPanel({ conversationId }: ReplayPanelProps) {
 
     setDetailLoading(true);
     setDetail(null);
-    fetchCheckpointDetail(conversationId, cp.checkpointId)
+    fetchCheckpointDetail(conversationId, cp.checkpoint_id)
       .then(setDetail)
       .catch(() => setDetail(null))
       .finally(() => setDetailLoading(false));
@@ -210,7 +210,7 @@ export function ReplayPanel({ conversationId }: ReplayPanelProps) {
                 : (i / (checkpoints.length - 1)) * 100;
             return (
               <div
-                key={cp.checkpointId}
+                key={cp.checkpoint_id}
                 className="absolute -translate-x-1/2"
                 style={{ left: `${pct}%` }}
               >
@@ -223,7 +223,7 @@ export function ReplayPanel({ conversationId }: ReplayPanelProps) {
                       : "text-ink/35 hover:text-ink/55"
                   }`}
                 >
-                  {cp.stepLabel}
+                  {cp.step_label}
                 </button>
               </div>
             );
@@ -233,14 +233,14 @@ export function ReplayPanel({ conversationId }: ReplayPanelProps) {
         {/* 当前选中 checkpoint 的摘要 */}
         {selected && (
           <div className="mt-2 flex flex-wrap gap-3 text-xs text-ink/45">
-            <span>#{selected.stepNumber}</span>
+            <span>#{selected.step_number}</span>
             {selected.timestamp && (
               <span>{formatTime(new Date(selected.timestamp).getTime())}</span>
             )}
-            {selected.hasSql && (
+            {selected.has_sql && (
               <span className="text-moss font-medium">含 SQL</span>
             )}
-            {selected.hasResult && (
+            {selected.has_result && (
               <span className="text-moss font-medium">含结果</span>
             )}
           </div>
@@ -312,9 +312,9 @@ export function ReplayPanel({ conversationId }: ReplayPanelProps) {
                   className="border border-ink/15 bg-white px-2 py-1 text-xs focus:outline-none focus:border-moss"
                 >
                   {checkpoints.map((cp, i) => (
-                    <option key={cp.checkpointId} value={i}>
-                      #{cp.stepNumber}{" "}
-                      {`- ${cp.stepLabel}`}
+                    <option key={cp.checkpoint_id} value={i}>
+                      #{cp.step_number}{" "}
+                      {`- ${cp.step_label}`}
                     </option>
                   ))}
                 </select>
@@ -330,9 +330,9 @@ export function ReplayPanel({ conversationId }: ReplayPanelProps) {
                   className="border border-ink/15 bg-white px-2 py-1 text-xs focus:outline-none focus:border-moss"
                 >
                   {checkpoints.map((cp, i) => (
-                    <option key={cp.checkpointId} value={i}>
-                      #{cp.stepNumber}{" "}
-                      {`- ${cp.stepLabel}`}
+                    <option key={cp.checkpoint_id} value={i}>
+                      #{cp.step_number}{" "}
+                      {`- ${cp.step_label}`}
                     </option>
                   ))}
                 </select>
