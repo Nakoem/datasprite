@@ -17,6 +17,7 @@ dependencies = [
     "langchain-huggingface>=1.2.1",
     "langgraph>=1.1.6",
     "loguru>=0.7.3",
+    "matplotlib>=3.11.1",
     "omegaconf>=2.3.0",
     "opentelemetry-exporter-otlp>=1.43.0",
     "opentelemetry-instrumentation-fastapi>=0.64b0",

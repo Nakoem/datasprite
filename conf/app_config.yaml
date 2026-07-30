@@ -50,6 +50,8 @@ llm:
   request_timeout: 60
   max_retries: 3
   fallback_model: qwen-plus
+  # 整条 query_sync 管线超时（秒），防 LLM 假死挂起
+  query_timeout: 120
 
 rate_limit:
   enable: true

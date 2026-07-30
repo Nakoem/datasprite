@@ -23,3 +23,4 @@ class AskResponse(BaseModel):
     metric_definitions: list[dict] | None = None
     column_sources: list[dict] | None = None
     error: str | None = None
+    chart_image_base64: str | None = None  # PNG 图表 base64，供飞书等渠道展示

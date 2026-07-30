@@ -8,6 +8,7 @@
 新增多轮对话支持：接收 conversation_id、加载历史、图执行后持久化消息。
 """
 
+import asyncio
 import json
 import uuid
 
@@ -22,6 +23,7 @@ from app.repositories.mysql.dw.dw_mysql_repository import DWMySQLRepository
 from app.repositories.mysql.meta.meta_mysql_repository import MetaMySQLRepository
 from app.repositories.qdrant.column_qdrant_repository import ColumnQdrantRepository
 from app.repositories.qdrant.metric_qdrant_repository import MetricQdrantRepository
+from app.core.log import logger
 from app.services.conversation_service import ConversationService
 
 
@@ -151,6 +153,8 @@ class QueryService:
         """同步版问数：直接消费 _run_graph 的 dict chunk，一次性返回。
 
         供 /api/ask 等外部集成接口使用，返回 SQL + 数据 + AI 摘要。
+        通过 asyncio.wait_for 包裹全管线，防止 LLM 假死导致请求挂起。
+        如果管线返回了澄清追问（ambiguous）而没有任何数据，则记录日志。
         """
         result = {
             "sql": None,
@@ -159,14 +163,17 @@ class QueryService:
             "metric_definitions": None,
             "column_sources": None,
             "error": None,
+            "chart_image_base64": None,
         }
+        seen_types: list[str] = []
 
-        try:
+        async def _collect():
             async for chunk in self._run_graph(query):
                 if not isinstance(chunk, dict):
                     continue
 
                 chunk_type = chunk.get("type", "")
+                seen_types.append(chunk_type)
                 if chunk_type == "result":
                     result["sql"] = chunk.get("sql")
                     result["data"] = chunk.get("data")
@@ -176,8 +183,32 @@ class QueryService:
                     result["column_sources"] = chunk.get("tables")
                 elif chunk_type == "error":
                     result["error"] = chunk.get("message")
+
+        from app.conf.app_config import app_config
+        timeout = app_config.llm.query_timeout
+        try:
+            await asyncio.wait_for(_collect(), timeout=timeout)
+        except asyncio.TimeoutError:
+            result["error"] = f"查询超时（{timeout}秒），请简化问题后重试"
+            return result
         except Exception as e:
             result["error"] = str(e)
+
+        # 有数据时尝试生成图表
+        if result["data"] and result["error"] is None:
+            try:
+                from app.services.chart_service import generate_chart
+                chart_b64 = generate_chart(result["data"], query)
+                if chart_b64:
+                    result["chart_image_base64"] = chart_b64
+            except Exception:
+                logger.exception("query_sync 图表生成异常")
+
+        if result["sql"] is None and result["error"] is None:
+            logger.warning(
+                "query_sync 未拿到数据 | query={} | seen_types={}",
+                query[:100], seen_types,
+            )
 
         return result
 

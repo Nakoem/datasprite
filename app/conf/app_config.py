@@ -96,6 +96,7 @@ class LLMConfig:
     request_timeout: int = 60
     max_retries: int = 2
     fallback_model: str = ""
+    query_timeout: int = 120
 
 
 @dataclass

@@ -52,4 +52,12 @@ async def ask_handler(
     """
     logger.info("外部 API 调用 /api/ask | query={}", body.query[:200])
     result = await query_service.query_sync(body.query)
-    return AskResponse(**result)
+    return AskResponse(
+        sql=result.get("sql"),
+        data=result.get("data"),
+        summary=result.get("summary"),
+        metric_definitions=result.get("metric_definitions"),
+        column_sources=result.get("column_sources"),
+        error=result.get("error"),
+        chart_image_base64=result.get("chart_image_base64"),
+    )
