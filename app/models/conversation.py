@@ -10,7 +10,6 @@ from datetime import datetime
 from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql.elements import quoted_name
-from sqlalchemy.types import JSON
 
 from app.models.base import Base
 
@@ -58,26 +57,26 @@ class MessageMySQL(Base):
         nullable=True,
         comment="助手消息对应的 SQL（仅 assistant）",
     )
-    result: Mapped[dict | list | None] = mapped_column(
-        JSON,
+    result: Mapped[str | None] = mapped_column(
+        Text,
         name=quoted_name("result", quote=True),
         nullable=True,
-        comment="助手消息的查询结果（仅 assistant）",
+        comment="助手消息的查询结果（JSON文本，仅 assistant）",
     )
     summary: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,
         comment="AI 生成的结果解读摘要（仅 assistant）",
     )
-    metric_definitions: Mapped[list | None] = mapped_column(
-        JSON,
+    metric_definitions: Mapped[str | None] = mapped_column(
+        Text,
         nullable=True,
-        comment="本次查询涉及的指标口径说明（仅 assistant）",
+        comment="本次查询涉及的指标口径说明（JSON文本，仅 assistant）",
     )
-    column_sources: Mapped[list | None] = mapped_column(
-        JSON,
+    column_sources: Mapped[str | None] = mapped_column(
+        Text,
         nullable=True,
-        comment="本次查询涉及的数据来源引用 — 表名+字段详情（仅 assistant）",
+        comment="本次查询涉及的数据来源引用（JSON文本，仅 assistant）",
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=func.now(), comment="消息创建时间"

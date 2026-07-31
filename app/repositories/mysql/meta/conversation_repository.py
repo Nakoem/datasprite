@@ -128,10 +128,10 @@ class ConversationRepository:
             role=message.role,
             content=message.content,
             sql=message.sql,
-            result=_to_json_safe(message.result),
+            result=json.dumps(_to_json_safe(message.result), ensure_ascii=False) if message.result is not None else None,
             summary=message.summary,
-            metric_definitions=_to_json_safe(message.metric_definitions),
-            column_sources=_to_json_safe(message.column_sources),
+            metric_definitions=json.dumps(_to_json_safe(message.metric_definitions), ensure_ascii=False) if message.metric_definitions is not None else None,
+            column_sources=json.dumps(_to_json_safe(message.column_sources), ensure_ascii=False) if message.column_sources is not None else None,
         )
         self.session.add(model)
         await self.session.commit()
