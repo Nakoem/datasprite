@@ -6,12 +6,29 @@
 """
 
 import json
+from datetime import date, datetime
+from decimal import Decimal
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.entities.conversation import Conversation, Message
 from app.models.conversation import ConversationMySQL, MessageMySQL
+
+
+def _to_json_safe(obj):
+    """递归转换 Decimal / datetime 等非 JSON 类型为可序列化等价物"""
+    if isinstance(obj, dict):
+        return {k: _to_json_safe(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_to_json_safe(v) for v in obj]
+    if isinstance(obj, Decimal):
+        return float(obj)
+    if isinstance(obj, datetime):
+        return obj.isoformat()
+    if isinstance(obj, date):
+        return obj.isoformat()
+    return obj
 
 
 def _parse_json(value: str | dict | list | None) -> dict | list | None:
@@ -21,7 +38,7 @@ def _parse_json(value: str | dict | list | None) -> dict | list | None:
     if isinstance(value, str):
         try:
             return json.loads(value)
-        except json.JSONDecodeError, TypeError:
+        except (json.JSONDecodeError, TypeError):
             return None
     return value
 
@@ -111,10 +128,10 @@ class ConversationRepository:
             role=message.role,
             content=message.content,
             sql=message.sql,
-            result=message.result,
+            result=_to_json_safe(message.result),
             summary=message.summary,
-            metric_definitions=message.metric_definitions,
-            column_sources=message.column_sources,
+            metric_definitions=_to_json_safe(message.metric_definitions),
+            column_sources=_to_json_safe(message.column_sources),
         )
         self.session.add(model)
         await self.session.commit()

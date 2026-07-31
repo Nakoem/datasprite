@@ -136,18 +136,21 @@ class QueryService:
             yield error
 
         finally:
-            await self.conversation_service.save_message(
-                Message(
-                    conversation_id=conversation_id,
-                    role="assistant",
-                    content=assistant_content or "流程已结束",
-                    sql=collected_sql,
-                    result=collected_result,
-                    summary=collected_summary,
-                    metric_definitions=collected_metric_definitions,
-                    column_sources=collected_column_sources,
+            try:
+                await self.conversation_service.save_message(
+                    Message(
+                        conversation_id=conversation_id,
+                        role="assistant",
+                        content=assistant_content or "流程已结束",
+                        sql=collected_sql,
+                        result=collected_result,
+                        summary=collected_summary,
+                        metric_definitions=collected_metric_definitions,
+                        column_sources=collected_column_sources,
+                    )
                 )
-            )
+            except Exception:
+                logger.exception("保存助手消息失败 | conversation_id=%s", conversation_id)
 
     async def query_sync(self, query: str) -> dict:
         """同步版问数：直接消费 _run_graph 的 dict chunk，一次性返回。

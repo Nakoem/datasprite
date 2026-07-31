@@ -8,6 +8,8 @@ SQL 生成闭环中的数据库环境读取 SQL 校验和最终查询执行也�
 """
 
 import re
+from datetime import date, datetime
+from decimal import Decimal
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -28,6 +30,21 @@ _MAX_ROWS = 1000
 
 # 查询超时（秒）
 _QUERY_TIMEOUT = 30
+
+
+def _to_json_safe(obj):
+    """递归转换 Decimal / datetime 等非 JSON 类型为可序列化等价物"""
+    if isinstance(obj, dict):
+        return {k: _to_json_safe(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_to_json_safe(v) for v in obj]
+    if isinstance(obj, Decimal):
+        return float(obj)
+    if isinstance(obj, datetime):
+        return obj.isoformat()
+    if isinstance(obj, date):
+        return obj.isoformat()
+    return obj
 
 
 def _validate_identifier(name: str, label: str = "标识符") -> str:
@@ -103,4 +120,4 @@ class DWMySQLRepository:
         )
 
         result = await self.session.execute(text(sql))
-        return [dict(row) for row in result.mappings().fetchall()]
+        return [_to_json_safe(dict(row)) for row in result.mappings().fetchall()]
