@@ -28,13 +28,14 @@ describe("StepRail", () => {
     expect(container.innerHTML).toBe("");
   });
 
-  it("渲染所有 12 个流程节点", () => {
+  it("渲染所有 16 个流程节点", () => {
     render(<StepRail steps={ALL_STEPS} />);
 
     const nodeNames = [
-      "抽取关键词", "召回字段信息", "召回指标信息", "召回字段取值",
-      "合并召回信息", "过滤指标信息", "过滤表信息", "增加额外上下文",
-      "生成SQL", "校验SQL", "校正SQL", "执行SQL",
+      "分析意图", "澄清追问", "抽取关键词", "召回字段信息",
+      "召回指标信息", "召回字段取值", "合并召回信息", "过滤指标信息",
+      "过滤表信息", "增加额外上下文", "生成SQL", "校验SQL",
+      "校正SQL", "语义校验", "执行SQL", "生成结果解读",
     ];
 
     for (const name of nodeNames) {
