@@ -18,6 +18,8 @@ from app.core.log import logger
 from app.entities.column_info import ColumnInfo
 from app.prompt.prompt_loader import load_prompt
 
+from ._llm_guard import ensure_str_list
+
 
 async def recall_column(state: DataAgentState, runtime: Runtime[DataAgentContext]):
     """召回和用户问题语义相关的字段元数据"""
@@ -45,6 +47,9 @@ async def recall_column(state: DataAgentState, runtime: Runtime[DataAgentContext
         chain = prompt | llm | output_parser
 
         result = await chain.ainvoke({"query": query})
+
+        # 模型偶发会输出 dict/str 而不是数组，格式异常时降级为仅用原始关键词
+        result = ensure_str_list(result, "字段扩展词")
 
         # 原始关键词和 LLM 扩展词一起参与召回；set 去重，避免重复请求同一关键词
         keywords = set(keywords + result)

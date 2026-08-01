@@ -51,6 +51,9 @@ services:
     environment:
       discovery.type: single-node
       xpack.security.enabled: "false"
+      # 显式压堆内存：默认按容器内存抢一半（~5GB）在 Docker Desktop 上必 OOM，
+      # 单节点测试环境 1GB 完全够用
+      ES_JAVA_OPTS: "-Xms1g -Xmx1g"
     ports:
       - "9201:9200"
     volumes:

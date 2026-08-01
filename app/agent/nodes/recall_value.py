@@ -17,6 +17,8 @@ from app.core.log import logger
 from app.entities.value_info import ValueInfo
 from app.prompt.prompt_loader import load_prompt
 
+from ._llm_guard import ensure_str_list
+
 
 async def recall_value(state: DataAgentState, runtime: Runtime[DataAgentContext]):
     """召回和用户问题相关的字段取值"""
@@ -44,6 +46,9 @@ async def recall_value(state: DataAgentState, runtime: Runtime[DataAgentContext]
         chain = prompt | llm | output_parser
 
         result = await chain.ainvoke({"query": query})
+
+        # 模型偶发会输出 dict/str 而不是数组，格式异常时降级为仅用原始关键词
+        result = ensure_str_list(result, "字段取值扩展词")
 
         # 通用关键词和字段值扩展词一起检索 ES，尽量提高真实取值召回率
         keywords = set(keywords + result)

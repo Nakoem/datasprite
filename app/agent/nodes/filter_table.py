@@ -46,16 +46,30 @@ async def filter_table(state: DataAgentState, runtime: Runtime[DataAgentContext]
                 ),
             }
         )
-        # 模型只负责选择，程序根据选择结果从原始 TableInfoState 中裁剪，避免模型重写复杂结构出错
-        filtered_table_infos: list[TableInfoState] = []
-        for table_info in table_infos:
-            if table_info["name"] in result:
-                table_info["columns"] = [
-                    column_info
-                    for column_info in table_info["columns"]
-                    if column_info["name"] in result[table_info["name"]]
-                ]
-                filtered_table_infos.append(table_info)
+        # 模型偶发会返回 list/str 而不是 dict（如 {"tables": [...]}）。
+        # 格式异常时降级为"不过滤"：保留全部候选表原样传给下游，
+        # 宁可多给上下文，也别让 SQL 生成阶段没有表可用
+        if not isinstance(result, dict):
+            logger.warning(
+                f"表过滤结果格式异常，保留全部候选表 | "
+                f"result_type={type(result).__name__} result={str(result)[:200]}"
+            )
+            filtered_table_infos = list(table_infos)
+        else:
+            # 模型只负责选择，程序根据选择结果从原始 TableInfoState 中裁剪，避免模型重写复杂结构出错
+            filtered_table_infos = []
+            for table_info in table_infos:
+                if table_info["name"] in result:
+                    selected_columns = result[table_info["name"]]
+                    # 模型可能返回 {表名: null}，把 None 当空列表处理，避免 x in None 崩溃
+                    if not isinstance(selected_columns, list):
+                        selected_columns = []
+                    table_info["columns"] = [
+                        column_info
+                        for column_info in table_info["columns"]
+                        if column_info["name"] in selected_columns
+                    ]
+                    filtered_table_infos.append(table_info)
 
         logger.info(
             f"过滤后的表信息：{[filtered_table_info['name'] for filtered_table_info in filtered_table_infos]}"

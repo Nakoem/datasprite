@@ -119,7 +119,13 @@ class MySQLSaver(BaseCheckpointSaver[str]):
     # ── Setup ──
 
     async def setup(self) -> None:
-        """建表（幂等）。"""
+        """建表（幂等）。
+
+        锁只保护这里：并发首次启动时只让一个任务建表。
+        其它 aget_tuple/alist/aput/aput_writes 不再加锁——
+        不同 thread_id 天然隔离，REPLACE/INSERT IGNORE 幂等，
+        全局锁反而会把所有会话的 checkpoint 读写串行化。
+        """
         async with self.lock:
             if self.is_setup:
                 return
@@ -226,7 +232,7 @@ class MySQLSaver(BaseCheckpointSaver[str]):
         checkpoint_ns = config["configurable"].get("checkpoint_ns", "")
         thread_id = str(config["configurable"]["thread_id"])
 
-        async with self.lock, self.engine.begin() as conn:
+        async with self.engine.begin() as conn:
             if checkpoint_id := get_checkpoint_id(config):
                 result = await conn.execute(
                     text(
@@ -325,7 +331,7 @@ class MySQLSaver(BaseCheckpointSaver[str]):
         if limit is not None:
             query += f" LIMIT {int(limit)}"
 
-        async with self.lock, self.engine.begin() as conn:
+        async with self.engine.begin() as conn:
             result = await conn.execute(text(query), params)
             rows = result.fetchall()
 
@@ -401,7 +407,7 @@ class MySQLSaver(BaseCheckpointSaver[str]):
             get_checkpoint_metadata(config, metadata), ensure_ascii=False
         ).encode("utf-8", "ignore")
 
-        async with self.lock, self.engine.begin() as conn:
+        async with self.engine.begin() as conn:
             await conn.execute(
                 text(
                     "REPLACE INTO langgraph_checkpoints"
@@ -449,7 +455,7 @@ class MySQLSaver(BaseCheckpointSaver[str]):
             " VALUES (:tid, :ns, :cid, :task_id, :idx, :channel, :type, :value)"
         )
 
-        async with self.lock, self.engine.begin() as conn:
+        async with self.engine.begin() as conn:
             for idx, (channel, value) in enumerate(writes):
                 wtype, wvalue = self.serde.dumps_typed(value)
                 await conn.execute(
@@ -467,7 +473,7 @@ class MySQLSaver(BaseCheckpointSaver[str]):
                 )
 
     async def adelete_thread(self, thread_id: str) -> None:
-        async with self.lock, self.engine.begin() as conn:
+        async with self.engine.begin() as conn:
             await conn.execute(
                 text("DELETE FROM langgraph_checkpoint_writes WHERE thread_id = :tid"),
                 {"tid": str(thread_id)},

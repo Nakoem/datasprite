@@ -46,10 +46,22 @@ async def filter_metric(state: DataAgentState, runtime: Runtime[DataAgentContext
                 ),
             }
         )
-        # 用模型返回的指标名称过滤原始结构，保留描述 依赖字段 别名等完整上下文
-        filtered_metric_infos = [
-            metric_info for metric_info in metric_infos if metric_info["name"] in result
-        ]
+        # 模型偶发会返回 dict/str 而不是数组（如 {"metrics": [...]}）。
+        # 格式异常时降级为"不过滤"：保留全部候选指标原样传给下游，
+        # 宁可多给上下文，也别让 SQL 生成阶段没有指标口径可用
+        if not isinstance(result, list):
+            logger.warning(
+                f"指标过滤结果格式异常，保留全部候选指标 | "
+                f"result_type={type(result).__name__} result={str(result)[:200]}"
+            )
+            filtered_metric_infos = list(metric_infos)
+        else:
+            # 用模型返回的指标名称过滤原始结构，保留描述 依赖字段 别名等完整上下文
+            filtered_metric_infos = [
+                metric_info
+                for metric_info in metric_infos
+                if metric_info["name"] in result
+            ]
 
         logger.info(
             f"过滤后的指标信息：{[filtered_metric_info['name'] for filtered_metric_info in filtered_metric_infos]}"

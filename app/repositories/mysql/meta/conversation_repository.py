@@ -134,6 +134,12 @@ class ConversationRepository:
             column_sources=json.dumps(_to_json_safe(message.column_sources), ensure_ascii=False) if message.column_sources is not None else None,
         )
         self.session.add(model)
+        # 会话活跃度：有消息落库就刷新会话更新时间，
+        # 否则 conversations.updated_at 永远是创建时间，列表按 updated_at 排序会失效
+        await self.session.execute(
+            text("UPDATE conversations SET updated_at = NOW() WHERE id = :cid"),
+            {"cid": message.conversation_id},
+        )
         await self.session.commit()
 
     async def get_messages(
@@ -144,7 +150,7 @@ class ConversationRepository:
             SELECT id, conversation_id, role, content, `sql`, `result`, summary, metric_definitions, column_sources, created_at
             FROM messages
             WHERE conversation_id = :cid
-            ORDER BY created_at ASC
+            ORDER BY created_at ASC, id ASC
             LIMIT :limit
         """
         result = await self.session.execute(
@@ -156,5 +162,24 @@ class ConversationRepository:
     async def get_recent_messages(
         self, conversation_id: str, limit: int = 10
     ) -> list[Message]:
-        """获取最近 N 条消息（用于构造 LLM 上下文）"""
-        return await self.get_messages(conversation_id, limit=limit)
+        """获取最近 N 条消息（用于构造 LLM 上下文）
+
+        注意：这里要按时间倒序取最近 N 条，再翻转为正序交给 LLM，
+        不能复用 get_messages（它是 ASC 取最早的，多轮对话超过 5 轮后
+        会把最近的追问上下文整个丢掉）。
+        """
+        sql = """
+            SELECT id, conversation_id, role, content, `sql`, `result`, summary, metric_definitions, column_sources, created_at
+            FROM messages
+            WHERE conversation_id = :cid
+            ORDER BY created_at DESC, id DESC
+            LIMIT :limit
+        """
+        result = await self.session.execute(
+            text(sql), {"cid": conversation_id, "limit": limit}
+        )
+        rows = result.mappings().fetchall()
+        # DESC 取最近 N 条后翻转，保证历史按先后顺序传给 LLM
+        # 次级排序键 id：用户连发消息时 created_at 同秒，仅按时间倒序会取错"最近 N 条"
+        rows.reverse()
+        return [_row_to_message(row) for row in rows]

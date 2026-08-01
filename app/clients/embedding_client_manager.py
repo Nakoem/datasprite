@@ -13,6 +13,23 @@ from langchain_huggingface import HuggingFaceEndpointEmbeddings
 from app.conf.app_config import EmbeddingConfig, app_config
 
 
+class _TimeoutEmbeddings(HuggingFaceEndpointEmbeddings):
+    """在向量化调用上包 asyncio.timeout 的 Embedding 客户端。
+
+    当前 langchain_huggingface 版本不支持 request_timeout 构造参数
+    （model_config extra=forbid 会直接报 pydantic 错误），
+    改用方法级超时兜底：Embedding 服务"假死"（连接建立但无响应）时
+    调用会被取消而不是无限挂起，拖死整条召回链路。
+    """
+
+    timeout_seconds: float = 60.0
+
+    async def aembed_query(self, text: str) -> list[float]:
+        return await asyncio.wait_for(
+            super().aembed_query(text), timeout=self.timeout_seconds
+        )
+
+
 class EmbeddingClientManager:
     """管理 Embedding 服务客户端的初始化与复用"""
 
@@ -26,7 +43,20 @@ class EmbeddingClientManager:
 
     def init(self):
         """显式初始化客户端，避免模块导入时立即建立外部连接"""
-        self.client = HuggingFaceEndpointEmbeddings(model=self._get_url())
+        self.client = _TimeoutEmbeddings(model=self._get_url())
+
+    async def close(self):
+        """关闭 Embedding 客户端连接（幂等）
+
+        HuggingFaceEndpointEmbeddings 未公开 close()，
+        用 getattr 探测并释放底层连接；没有 close 则只是清引用交给 GC。
+        """
+        client = self.client
+        self.client = None
+        if client is not None:
+            close = getattr(client, "close", None)
+            if callable(close):
+                await close()
 
 
 # 模块级单例，供整个项目复用同一套 Embedding 客户端管理器

@@ -29,9 +29,23 @@ from app.core.rate_limiter import rate_limit_middleware
 # ── OpenTelemetry 链路追踪 ──────────────────────────────────────────
 resource = Resource.create({SERVICE_NAME: "datasprite"})
 provider = TracerProvider(resource=resource)
-provider.add_span_processor(
-    BatchSpanProcessor(OTLPSpanExporter(endpoint="http://localhost:4318/v1/traces"))
-)
+
+# collector（localhost:4318）没启动时，后台导出线程会持续连接失败刷日志。
+# try/except 保证 exporter 初始化任何异常都不会拖垮应用 import；
+# timeout=3 让 collector 挂死时后台线程能快速放弃，而不是无限等待。
+try:
+    provider.add_span_processor(
+        BatchSpanProcessor(
+            OTLPSpanExporter(
+                endpoint="http://localhost:4318/v1/traces",
+                timeout=3,
+            )
+        )
+    )
+except Exception as e:
+    logger.warning(f"OTLP exporter 初始化失败，trace 降级为仅本地采样 | {e}")
+
+# set_tracer_provider 必须无条件执行，否则 FastAPIInstrumentor 埋点会报错
 trace.set_tracer_provider(provider)
 
 # ── FastAPI 应用 ────────────────────────────────────────────────────

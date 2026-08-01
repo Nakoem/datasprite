@@ -18,6 +18,8 @@ from app.core.log import logger
 from app.entities.metric_info import MetricInfo
 from app.prompt.prompt_loader import load_prompt
 
+from ._llm_guard import ensure_str_list
+
 
 async def recall_metric(state: DataAgentState, runtime: Runtime[DataAgentContext]):
     """召回和用户问题语义相关的业务指标"""
@@ -45,6 +47,9 @@ async def recall_metric(state: DataAgentState, runtime: Runtime[DataAgentContext
         chain = prompt | llm | output_parser
 
         result = await chain.ainvoke({"query": query})
+
+        # 模型偶发会输出 dict/str 而不是数组，格式异常时降级为仅用原始关键词
+        result = ensure_str_list(result, "指标扩展词")
 
         # 通用关键词和指标扩展词都参与召回，提升同义指标的命中率
         keywords = set(keywords + result)

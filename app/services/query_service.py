@@ -17,13 +17,13 @@ from langchain_huggingface import HuggingFaceEndpointEmbeddings
 from app.agent.context import DataAgentContext
 from app.agent.graph import graph  # 无 checkpointer 的默认图（fallback）
 from app.agent.state import DataAgentState
+from app.core.log import logger
 from app.entities.conversation import Message
 from app.repositories.es.value_es_repository import ValueESRepository
 from app.repositories.mysql.dw.dw_mysql_repository import DWMySQLRepository
 from app.repositories.mysql.meta.meta_mysql_repository import MetaMySQLRepository
 from app.repositories.qdrant.column_qdrant_repository import ColumnQdrantRepository
 from app.repositories.qdrant.metric_qdrant_repository import MetricQdrantRepository
-from app.core.log import logger
 from app.services.conversation_service import ConversationService
 
 
@@ -216,7 +216,20 @@ class QueryService:
         return result
 
     async def query(self, query: str, conversation_id: str | None = None):
-        """执行一次问数工作流，并逐段产出 SSE 消息"""
+        """执行一次问数工作流，并逐段产出 SSE 消息。
 
-        async for chunk in self._run_graph(query, conversation_id):
-            yield f"data: {json.dumps(chunk, ensure_ascii=False, default=str)}\n\n"
+        与 query_sync 一致，用 asyncio.timeout 包住整条管线，
+        防止 LLM 假死导致 SSE 挂起不落帧。
+        """
+        from app.conf.app_config import app_config
+        timeout = app_config.llm.query_timeout
+        try:
+            async with asyncio.timeout(timeout):
+                async for chunk in self._run_graph(query, conversation_id):
+                    yield f"data: {json.dumps(chunk, ensure_ascii=False, default=str)}\n\n"
+        except asyncio.TimeoutError:
+            error = {
+                "type": "error",
+                "message": f"查询超时（{timeout}秒），请简化问题后重试",
+            }
+            yield f"data: {json.dumps(error, ensure_ascii=False, default=str)}\n\n"

@@ -19,6 +19,7 @@ from app.clients.mysql_client_manager import (
 )
 from app.clients.qdrant_client_manager import qdrant_client_manager
 from app.clients.redis_client_manager import redis_client_manager
+from app.core.log import logger
 
 
 @asynccontextmanager
@@ -66,22 +67,40 @@ async def lifespan(app: FastAPI):
                 """
             )
         )
-        # 兼容已有数据库：补齐 column_sources 列
+        # 兼容已有数据库：先查列是否存在，不存在才补列。
+        # 用 information_schema 判断而不是 try/except ALTER，
+        # 否则每次启动都会对 messages 表执行一次必然失败的 ALTER
         try:
+            result = await session.execute(
+                text(
+                    """
+                    SELECT COUNT(*) FROM information_schema.columns
+                    WHERE table_schema = DATABASE()
+                      AND table_name = 'messages'
+                      AND column_name = 'column_sources'
+                    """
+                )
+            )
+            column_sources_exists = (result.scalar() or 0) > 0
+        except Exception:
+            # information_schema 查询异常（权限/版本差异）时保守跳过 ALTER，
+            # 宁可少补一列也不能让启动崩掉
+            logger.exception("检查 column_sources 列存在性失败，跳过 ALTER")
+            column_sources_exists = True
+        if not column_sources_exists:
             await session.execute(
                 text(
                     "ALTER TABLE messages ADD COLUMN column_sources JSON "
                     "COMMENT '本次查询涉及的数据来源引用 — 表名+字段详情'"
                 )
             )
-        except Exception:
-            pass
         await session.commit()
 
     # yield 之前是启动逻辑，yield 之后是关闭逻辑；中间阶段由 FastAPI 正常处理请求
     yield
 
     # 关闭阶段：按应用级资源统一释放连接，避免进程退出前留下未关闭的网络连接
+    await embedding_client_manager.close()
     await qdrant_client_manager.close()
     await es_client_manager.close()
     await meta_mysql_client_manager.close()
