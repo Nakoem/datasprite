@@ -3,7 +3,7 @@
   声明页面元信息并挂载 React 应用入口
 -->
 <!doctype html>
-<html lang="zh-CN" data-theme="datasprite">
+<html lang="zh-CN" data-theme="wireframe">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -11,7 +11,7 @@
     <script>
       try {
         document.documentElement.dataset.theme =
-          localStorage.getItem("datasprite-theme") === "wireframe" ? "wireframe" : "datasprite";
+          localStorage.getItem("datasprite-theme") === "datasprite" ? "datasprite" : "wireframe";
       } catch (e) {}
     </script>
     <meta name="theme-color" content="#FAF8F4" />

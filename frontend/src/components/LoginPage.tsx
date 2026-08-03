@@ -15,6 +15,8 @@ export default function LoginPage({ onSuccess }: LoginPageProps) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  // 初始 readOnly 阻止浏览器 autofill 填入旧账号，用户一聚焦就永久可编辑
+  const [usernameTouched, setUsernameTouched] = useState(false);
 
   const canSubmit = username.trim().length > 0 && password.length > 0 && !submitting;
 
@@ -34,16 +36,16 @@ export default function LoginPage({ onSuccess }: LoginPageProps) {
   };
 
   return (
-    <div className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-gradient-to-br from-[#f4f2ec] to-[#e4e2d8] px-4">
+    <div className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-base-200 px-4">
       {/* 与主界面一致的装饰纹理：网格线 + 颗粒感 */}
       <div className="pointer-events-none fixed inset-0 bg-[linear-gradient(90deg,rgba(20,17,14,0.045)_1px,transparent_1px),linear-gradient(rgba(20,17,14,0.035)_1px,transparent_1px)] bg-[size:48px_48px]" />
       <div className="pointer-events-none fixed inset-0 grain" />
 
-      <div className="card w-full max-w-md border border-ink/10 bg-parchment shadow-panel">
+      <div className="card w-full max-w-md border border-base-content/10 bg-base-100 shadow-panel">
         <div className="card-body gap-6 p-8">
           {/* Logo + 标题 */}
           <div className="flex flex-col items-center gap-3 text-center">
-            <div className="grid h-14 w-14 place-items-center bg-ink text-parchment">
+            <div className="grid h-14 w-14 place-items-center bg-base-content text-base-100">
               <BarChart3 className="h-7 w-7" aria-hidden="true" />
             </div>
             <div>
@@ -54,49 +56,49 @@ export default function LoginPage({ onSuccess }: LoginPageProps) {
 
           {/* 登录失败提示 */}
           {error && (
-            <div role="alert" className="alert border-none bg-tomato/10 py-2 text-sm text-tomato">
+            <div role="alert" className="alert border-none bg-error/10 py-2 text-sm text-error">
               <span>{error}</span>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <form onSubmit={handleSubmit} autoComplete="off" className="flex flex-col gap-4">
             <label className="label" htmlFor="login-username">
               <span className="label-text text-xs font-semibold uppercase tracking-[0.14em] text-ink/45">用户名</span>
             </label>
-            <label className={`input input-bordered flex w-full items-center gap-2 focus-within:border-moss ${error ? "input-error border-error bg-error/10" : "border-ink/15 bg-white"}`}>
+            <label className={`input input-bordered flex w-full items-center gap-2 bg-transparent focus-within:border-moss ${error ? "input-error border-error" : "border-ink/15"}`}>
               <User className="h-4 w-4 shrink-0 text-ink/40" aria-hidden="true" />
               <input
                 id="login-username"
                 type="text"
                 className="grow"
-                placeholder="admin"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                autoComplete="username"
+                autoComplete="off"
                 autoFocus
+                readOnly={!usernameTouched}
+                onFocus={() => setUsernameTouched(true)}
               />
             </label>
 
             <label className="label" htmlFor="login-password">
               <span className="label-text text-xs font-semibold uppercase tracking-[0.14em] text-ink/45">密码</span>
             </label>
-            <label className={`input input-bordered flex w-full items-center gap-2 focus-within:border-moss ${error ? "input-error border-error bg-error/10" : "border-ink/15 bg-white"}`}>
+            <label className={`input input-bordered flex w-full items-center gap-2 bg-transparent focus-within:border-moss ${error ? "input-error border-error" : "border-ink/15"}`}>
               <KeyRound className="h-4 w-4 shrink-0 text-ink/40" aria-hidden="true" />
               <input
                 id="login-password"
                 type="password"
                 className="grow"
-                placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                autoComplete="current-password"
+                autoComplete="new-password"
               />
             </label>
 
             <button
               type="submit"
               disabled={!canSubmit}
-              className="btn mt-2 h-11 w-full border-none bg-moss text-sm font-semibold text-white transition hover:bg-soot disabled:cursor-not-allowed disabled:bg-moss/40"
+              className="btn btn-primary mt-2 h-11 w-full border-none text-sm font-semibold text-primary-content"
             >
               {submitting && <span className="loading loading-spinner loading-sm" aria-hidden="true" />}
               {submitting ? "登录中…" : "登 录"}

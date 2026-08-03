@@ -110,6 +110,15 @@ textarea {
   font: inherit;
 }
 
+/* 登录页等输入框去掉 Chrome autofill 的淡蓝背景，保持主题透明的干净线框感 */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px transparent inset;
+  -webkit-text-fill-color: var(--color-base-content);
+  transition: background-color 9999s ease-in-out 0s;
+}
+
 ::selection {
   background: rgba(94, 120, 85, 0.2);
 }

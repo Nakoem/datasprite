@@ -66,10 +66,11 @@ type AppTheme = "datasprite" | "wireframe";
 const THEME_KEY = "datasprite-theme";
 
 function getInitialTheme(): AppTheme {
+  // 默认 wireframe（宝更爱线框风），localStorage 明确存了 datasprite 才回品牌
   try {
-    return localStorage.getItem(THEME_KEY) === "wireframe" ? "wireframe" : "datasprite";
+    return localStorage.getItem(THEME_KEY) === "datasprite" ? "datasprite" : "wireframe";
   } catch {
-    return "datasprite";
+    return "wireframe";
   }
 }
 
