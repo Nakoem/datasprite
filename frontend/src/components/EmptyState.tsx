@@ -1,6 +1,7 @@
 /**
  * 首页空状态组件
  * 展示产品入口信息和可点击的示例问数问题
+ * 改用 DaisyUI 组件：badge / card / btn
  */
 import { LineChart, Search, ShoppingBag, Sparkles } from "lucide-react";
 
@@ -19,7 +20,7 @@ export function EmptyState({ examples, onUseExample }: EmptyStateProps) {
   return (
     <div className="mx-auto flex min-h-full max-w-5xl flex-col justify-center px-4 py-12">
       <div className="mb-10 max-w-3xl">
-        <div className="mb-5 inline-flex items-center gap-2 border border-moss/25 bg-moss/10 px-3 py-1.5 text-sm font-semibold text-moss">
+        <div className="badge badge-outline mb-5 border-moss/25 bg-moss/10 px-3 py-3 text-sm font-semibold text-moss">
           <Sparkles className="h-4 w-4" aria-hidden="true" />
           智能数据分析系统
         </div>
@@ -32,7 +33,7 @@ export function EmptyState({ examples, onUseExample }: EmptyStateProps) {
         {highlights.map((item) => {
           const Icon = item.icon;
           return (
-            <div key={item.label} className="border border-ink/10 bg-white/55 px-4 py-4">
+            <div key={item.label} className="card card-bordered bg-white/55 px-4 py-4 shadow-none">
               <Icon className="mb-5 h-5 w-5 text-brass" aria-hidden="true" />
               <div className="text-sm font-semibold text-ink">{item.label}</div>
             </div>
@@ -46,7 +47,7 @@ export function EmptyState({ examples, onUseExample }: EmptyStateProps) {
             key={example}
             type="button"
             onClick={() => onUseExample(example)}
-            className="min-h-20 border border-ink/10 bg-white/80 px-4 py-4 text-left text-[15px] leading-6 text-ink transition hover:-translate-y-0.5 hover:border-moss/35 hover:bg-white focus:outline-none focus:ring-2 focus:ring-moss/35"
+            className="btn btn-outline btn-lg min-h-20 justify-start whitespace-normal px-4 text-left text-[15px] font-normal normal-case leading-6"
           >
             {example}
           </button>

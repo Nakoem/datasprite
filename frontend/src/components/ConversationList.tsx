@@ -2,10 +2,11 @@
  * 会话历史侧边栏列表
  *
  * 展示用户的所有历史会话，支持点击加载和删除。
- * 替换侧边栏中原有的硬编码样例区。
+ * 改用 DaisyUI menu 组件（menu-active 激活态自动用品牌主色 moss）。
  */
 import { MessageSquare, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { cn } from "../lib/format";
 import type { Conversation } from "../types/agent";
 
 type ConversationListProps = {
@@ -50,27 +51,26 @@ export function ConversationList({
   }
 
   return (
-    <div className="space-y-1">
+    <ul className="menu menu-vertical gap-0.5 px-0 py-0">
       {conversations.map((conv) => {
         const isActive = conv.id === activeId;
         return (
-          <div
+          <li
             key={conv.id}
-            className="group relative"
+            className="group relative min-h-0"
             onMouseEnter={() => setHoverId(conv.id)}
             onMouseLeave={() => setHoverId(null)}
           >
             <button
               type="button"
               onClick={() => onSelect(conv.id)}
-              className={`flex w-full items-start gap-2 px-3 py-2.5 text-left text-sm leading-5 transition ${
-                isActive
-                  ? "bg-moss/12 text-ink border-l-2 border-moss"
-                  : "border-l-2 border-transparent text-ink/70 hover:bg-ink/5 hover:text-ink"
-              }`}
+              className={cn(
+                "w-full justify-start gap-2 py-2.5 text-left text-sm",
+                isActive ? "menu-active" : "hover:bg-ink/5",
+              )}
             >
               <MessageSquare
-                className={`mt-0.5 h-4 w-4 shrink-0 ${isActive ? "text-moss" : "text-ink/35"}`}
+                className={cn("mt-0.5 h-4 w-4 shrink-0", isActive ? "text-moss" : "text-ink/35")}
                 aria-hidden="true"
               />
               <div className="min-w-0 flex-1">
@@ -89,16 +89,16 @@ export function ConversationList({
                   e.stopPropagation();
                   onDelete(conv.id);
                 }}
-                className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-ink/30 transition hover:bg-tomato/10 hover:text-tomato"
+                className="btn btn-circle btn-ghost btn-xs absolute right-2 top-1/2 -translate-y-1/2 text-ink/30 hover:text-tomato"
                 title="删除"
                 aria-label="删除会话"
               >
                 <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
               </button>
             )}
-          </div>
+          </li>
         );
       })}
-    </div>
+    </ul>
   );
 }

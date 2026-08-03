@@ -22,6 +22,35 @@
   --shadow-panel: 0 24px 70px rgba(51, 47, 41, 0.16);
 }
 
+/*
+ * DaisyUI 语义色 → 项目品牌色映射。
+ * 用 unlayered :root 而非 @theme：@theme 变量落在 @layer theme（优先级最低），
+ * 会被 DaisyUI 默认主题（@layer base）覆盖；unlayered :root 优先级最高，必然生效。
+ * 这样 btn-primary / alert-error / bg-base-100 等 DaisyUI 组件自动羊皮纸风。
+ */
+:root {
+  --color-base-100: #faf8f4;
+  --color-base-200: #f2efe8;
+  --color-base-300: #e4e2d8;
+  --color-base-content: #14110e;
+  --color-primary: #5e7855;
+  --color-primary-content: #ffffff;
+  --color-secondary: #d9806b;
+  --color-secondary-content: #ffffff;
+  --color-accent: #bdcbb5;
+  --color-accent-content: #14110e;
+  --color-neutral: #332f29;
+  --color-neutral-content: #faf8f4;
+  --color-info: #8ab4d8;
+  --color-info-content: #14110e;
+  --color-success: #5e7855;
+  --color-success-content: #ffffff;
+  --color-warning: #d9806b;
+  --color-warning-content: #ffffff;
+  --color-error: #c55444;
+  --color-error-content: #ffffff;
+}
+
 .scrollbar-hide {
   scrollbar-width: thin;
   scrollbar-color: transparent transparent;

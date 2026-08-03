@@ -63,7 +63,7 @@ export default function LoginPage({ onSuccess }: LoginPageProps) {
             <label className="label" htmlFor="login-username">
               <span className="label-text text-xs font-semibold uppercase tracking-[0.14em] text-ink/45">用户名</span>
             </label>
-            <label className="input input-bordered flex items-center gap-2 border-ink/15 bg-white focus-within:border-moss">
+            <label className="input input-bordered flex w-full items-center gap-2 border-ink/15 bg-white focus-within:border-moss">
               <User className="h-4 w-4 shrink-0 text-ink/40" aria-hidden="true" />
               <input
                 id="login-username"
@@ -80,7 +80,7 @@ export default function LoginPage({ onSuccess }: LoginPageProps) {
             <label className="label" htmlFor="login-password">
               <span className="label-text text-xs font-semibold uppercase tracking-[0.14em] text-ink/45">密码</span>
             </label>
-            <label className="input input-bordered flex items-center gap-2 border-ink/15 bg-white focus-within:border-moss">
+            <label className="input input-bordered flex w-full items-center gap-2 border-ink/15 bg-white focus-within:border-moss">
               <KeyRound className="h-4 w-4 shrink-0 text-ink/40" aria-hidden="true" />
               <input
                 id="login-password"
@@ -96,7 +96,7 @@ export default function LoginPage({ onSuccess }: LoginPageProps) {
             <button
               type="submit"
               disabled={!canSubmit}
-              className="btn mt-2 h-11 border-none bg-moss text-sm font-semibold text-white transition hover:bg-soot disabled:cursor-not-allowed disabled:bg-moss/40"
+              className="btn mt-2 h-11 w-full border-none bg-moss text-sm font-semibold text-white transition hover:bg-soot disabled:cursor-not-allowed disabled:bg-moss/40"
             >
               {submitting && <span className="loading loading-spinner loading-sm" aria-hidden="true" />}
               {submitting ? "登录中…" : "登 录"}
