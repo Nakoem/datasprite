@@ -3,10 +3,17 @@
   声明页面元信息并挂载 React 应用入口
 -->
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="datasprite">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- 首屏前按 localStorage 设置主题，避免刷新时主题闪跳（FOUC） -->
+    <script>
+      try {
+        document.documentElement.dataset.theme =
+          localStorage.getItem("datasprite-theme") === "wireframe" ? "wireframe" : "datasprite";
+      } catch (e) {}
+    </script>
     <meta name="theme-color" content="#FAF8F4" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />

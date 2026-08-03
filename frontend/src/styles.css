@@ -3,7 +3,46 @@
  * Tailwind v4 + daisyUI v5
  */
 @import "tailwindcss";
-@plugin "daisyui";
+@plugin "daisyui" {
+  themes: wireframe; /* 启用内置 wireframe 主题，配合 html[data-theme] 切换 */
+}
+/* 项目品牌主题：把品牌色定义成真正的 DaisyUI 主题（datasprite，默认）。
+   相比 unlayered :root 映射，好处是能通过 html[data-theme] 与 wireframe 等内置主题
+   平等切换（:where(:root) 特异性 0，设 data-theme="wireframe" 即可覆盖）。 */
+@plugin "daisyui/theme" {
+  name: "datasprite";
+  default: true;
+  color-scheme: light;
+  /* DaisyUI 默认圆角/边框（themes 只启用了 wireframe，需给品牌主题补齐） */
+  --radius-selector: 0.5rem;
+  --radius-field: 0.25rem;
+  --radius-box: 0.5rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 1;
+  --noise: 0;
+  --color-base-100: #faf8f4; /* parchment */
+  --color-base-200: #f2efe8;
+  --color-base-300: #e4e2d8;
+  --color-base-content: #14110e; /* ink */
+  --color-primary: #5e7855; /* moss */
+  --color-primary-content: #ffffff;
+  --color-secondary: #d9806b; /* brass */
+  --color-secondary-content: #ffffff;
+  --color-accent: #bdcbb5; /* mist */
+  --color-accent-content: #14110e;
+  --color-neutral: #332f29; /* soot */
+  --color-neutral-content: #faf8f4;
+  --color-info: #8ab4d8;
+  --color-info-content: #14110e;
+  --color-success: #5e7855;
+  --color-success-content: #ffffff;
+  --color-warning: #d9806b;
+  --color-warning-content: #ffffff;
+  --color-error: #c55444; /* tomato */
+  --color-error-content: #ffffff;
+}
 
 @theme {
   --font-sans: "Inter", "LXGW WenKai Screen", "Noto Sans SC", "PingFang SC",
@@ -20,35 +59,6 @@
   --color-mist: #bdcbb5;
   --shadow-line: 0 1px 0 rgba(20, 17, 14, 0.08);
   --shadow-panel: 0 24px 70px rgba(51, 47, 41, 0.16);
-}
-
-/*
- * DaisyUI 语义色 → 项目品牌色映射。
- * 用 unlayered :root 而非 @theme：@theme 变量落在 @layer theme（优先级最低），
- * 会被 DaisyUI 默认主题（@layer base）覆盖；unlayered :root 优先级最高，必然生效。
- * 这样 btn-primary / alert-error / bg-base-100 等 DaisyUI 组件自动羊皮纸风。
- */
-:root {
-  --color-base-100: #faf8f4;
-  --color-base-200: #f2efe8;
-  --color-base-300: #e4e2d8;
-  --color-base-content: #14110e;
-  --color-primary: #5e7855;
-  --color-primary-content: #ffffff;
-  --color-secondary: #d9806b;
-  --color-secondary-content: #ffffff;
-  --color-accent: #bdcbb5;
-  --color-accent-content: #14110e;
-  --color-neutral: #332f29;
-  --color-neutral-content: #faf8f4;
-  --color-info: #8ab4d8;
-  --color-info-content: #14110e;
-  --color-success: #5e7855;
-  --color-success-content: #ffffff;
-  --color-warning: #d9806b;
-  --color-warning-content: #ffffff;
-  --color-error: #c55444;
-  --color-error-content: #ffffff;
 }
 
 .scrollbar-hide {
@@ -90,7 +100,8 @@ body,
 
 body {
   margin: 0;
-  background: #faf8f4;
+  /* 随主题走：品牌主题=羊皮纸 #faf8f4，wireframe=纯白 */
+  background: var(--color-base-100);
   overflow: hidden;
 }
 

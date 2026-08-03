@@ -63,8 +63,8 @@ export function Composer({
                     className={cn(
                         "btn btn-circle h-11 w-11 shrink-0",
                         isStreaming
-                            ? "btn-error text-white"
-                            : "btn-primary text-white",
+                            ? "btn-error text-error-content"
+                            : "btn-primary text-primary-content",
                         !isStreaming && disabled && "btn-disabled",
                     )}
                     title={isStreaming ? "停止" : "发送"}

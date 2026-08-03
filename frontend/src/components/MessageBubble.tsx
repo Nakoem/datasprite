@@ -48,7 +48,7 @@ export function MessageBubble({ message, onClarificationSelect, onRetry }: Messa
         className={cn(
           "chat-bubble shadow-line",
           isUser
-            ? "chat-bubble-primary text-white"
+            ? "chat-bubble-primary text-primary-content"
             : "border border-ink/10 bg-white/80 text-ink backdrop-blur",
         )}
       >

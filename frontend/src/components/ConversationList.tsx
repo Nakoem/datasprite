@@ -123,7 +123,7 @@ export function ConversationList({
             <button type="button" className="btn btn-ghost" onClick={() => setDeleteTarget(null)}>
               取消
             </button>
-            <button type="button" className="btn btn-error text-white" onClick={confirmDelete}>
+            <button type="button" className="btn btn-error text-error-content" onClick={confirmDelete}>
               删除
             </button>
           </div>

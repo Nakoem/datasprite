@@ -11,6 +11,7 @@ import {
   LogOut,
   Menu,
   MessageSquarePlus,
+  Palette,
   Search,
   Server,
 } from "lucide-react";
@@ -60,6 +61,17 @@ function upsertStep(steps: StepState[] = [], event: Extract<AgentEvent, { type: 
 }
 
 type AppView = "chat" | "audit" | "replay";
+type AppTheme = "datasprite" | "wireframe";
+
+const THEME_KEY = "datasprite-theme";
+
+function getInitialTheme(): AppTheme {
+  try {
+    return localStorage.getItem(THEME_KEY) === "wireframe" ? "wireframe" : "datasprite";
+  } catch {
+    return "datasprite";
+  }
+}
 
 export default function App() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -74,6 +86,18 @@ export default function App() {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [view, setView] = useState<AppView>("chat");
+
+  // 主题切换（datasprite 品牌羊皮纸 ↔ wireframe 线框），localStorage 持久化
+  const [theme, setTheme] = useState<AppTheme>(getInitialTheme);
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    try {
+      localStorage.setItem(THEME_KEY, theme);
+    } catch {
+      /* localStorage 不可用时仅本次会话生效 */
+    }
+  }, [theme]);
+  const toggleTheme = () => setTheme((t) => (t === "datasprite" ? "wireframe" : "datasprite"));
 
   const isStreaming = Boolean(activeController);
   const canSubmit = draft.trim().length > 0 && !isStreaming;
@@ -404,6 +428,17 @@ export default function App() {
       </div>
 
       <div className="border-t border-ink/10 p-4">
+        <div className="tooltip tooltip-right" data-tip={theme === "datasprite" ? "切换到线框主题" : "切换到羊皮纸主题"}>
+          <button
+            type="button"
+            onClick={toggleTheme}
+            className="btn btn-ghost btn-sm mb-3 flex h-9 w-full justify-start gap-2 border border-ink/10 normal-case text-ink/60 hover:bg-ink/5"
+          >
+            <Palette className="h-3.5 w-3.5" aria-hidden="true" />
+            {theme === "datasprite" ? "羊皮纸主题" : "线框主题"}
+            <span className="ml-auto text-[11px] opacity-50">切换</span>
+          </button>
+        </div>
         <button
           type="button"
           onClick={handleLogout}
@@ -434,7 +469,7 @@ export default function App() {
   );
 
   return (
-    <div className="h-dvh overflow-hidden bg-parchment text-ink">
+    <div className="h-dvh overflow-hidden bg-base-100 text-base-content">
       <div className="pointer-events-none fixed inset-0 bg-[linear-gradient(90deg,rgba(20,17,14,0.045)_1px,transparent_1px),linear-gradient(rgba(20,17,14,0.035)_1px,transparent_1px)] bg-[size:48px_48px]" />
       <div className="pointer-events-none fixed inset-0 grain" />
 
@@ -448,7 +483,7 @@ export default function App() {
           </aside>
 
           <main className="flex min-h-0 min-w-0 flex-col overflow-hidden">
-          <header className="flex h-16 shrink-0 items-center justify-between border-b border-ink/10 bg-parchment/88 px-4 backdrop-blur lg:px-6">
+          <header className="flex h-16 shrink-0 items-center justify-between border-b border-ink/10 bg-base-100/88 px-4 backdrop-blur lg:px-6">
             <div className="flex min-w-0 items-center gap-3">
               <label
                 htmlFor="app-drawer"
