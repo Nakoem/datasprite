@@ -3,7 +3,8 @@
  * 组合展示用户问题、智能体回复、执行流程和结果表格
  * 改用 DaisyUI chat 组件：chat-start/chat-end + chat-bubble
  */
-import { AlertTriangle, Bot, Copy, RefreshCw, UserRound } from "lucide-react";
+import { AlertTriangle, CircleUserRound, Copy, RefreshCw, Sparkles } from "lucide-react";
+import { useState, type ReactNode } from "react";
 import { ChartView } from "./ChartView";
 import { ClarificationPanel } from "./ClarificationPanel";
 import { SourceCard } from "./SourceCard";
@@ -18,6 +19,29 @@ type MessageBubbleProps = {
   onClarificationSelect?: (question: string) => void;
   onRetry?: () => void;
 };
+
+type ChatAvatarProps = {
+  src: string;
+  alt: string;
+  fallbackClassName: string;
+  fallbackIcon: ReactNode;
+};
+
+/** 气泡头像：DiceBear 在线头像图片，加载失败时回退到图标圆底，避免离线裂图 */
+function ChatAvatar({ src, alt, fallbackClassName, fallbackIcon }: ChatAvatarProps) {
+  const [failed, setFailed] = useState(false);
+  return (
+    <div className="w-9 rounded-full ring-1 ring-ink/10">
+      {failed ? (
+        <div className={`grid h-9 w-9 place-items-center rounded-full ${fallbackClassName}`}>
+          {fallbackIcon}
+        </div>
+      ) : (
+        <img src={src} alt={alt} loading="lazy" onError={() => setFailed(true)} />
+      )}
+    </div>
+  );
+}
 
 export function MessageBubble({ message, onClarificationSelect, onRetry }: MessageBubbleProps) {
   const isUser = message.role === "user";
@@ -38,9 +62,12 @@ export function MessageBubble({ message, onClarificationSelect, onRetry }: Messa
     <article className={cn("group chat", isUser ? "chat-end" : "chat-start")}>
       {!isUser && (
         <div className="chat-image avatar">
-          <div className="grid h-9 w-9 place-items-center rounded-full bg-ink text-parchment">
-            <Bot className="h-4 w-4" aria-hidden="true" />
-          </div>
+          <ChatAvatar
+            src="https://api.dicebear.com/9.x/bottts/svg?seed=DataSprite"
+            alt="DataSprite 智能助手"
+            fallbackClassName="bg-ink text-parchment"
+            fallbackIcon={<Sparkles className="h-4 w-4" aria-hidden="true" />}
+          />
         </div>
       )}
 
@@ -126,9 +153,12 @@ export function MessageBubble({ message, onClarificationSelect, onRetry }: Messa
 
       {isUser && (
         <div className="chat-image avatar">
-          <div className="grid h-9 w-9 place-items-center rounded-full bg-moss text-white">
-            <UserRound className="h-4 w-4" aria-hidden="true" />
-          </div>
+          <ChatAvatar
+            src="https://api.dicebear.com/9.x/notionists/svg?seed=Nakko"
+            alt="当前用户"
+            fallbackClassName="bg-moss text-white"
+            fallbackIcon={<CircleUserRound className="h-4 w-4" aria-hidden="true" />}
+          />
         </div>
       )}
     </article>
