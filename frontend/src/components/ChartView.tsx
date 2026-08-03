@@ -303,7 +303,7 @@ function BarChartView({ data, hint }: { data: unknown; hint: ChartHint }) {
               key={key}
               dataKey={key}
               name={key}
-              fill={dataKeys.length === 1 ? EMPHASIS.light : categorical(i)}
+              fill={dataKeys.length === 1 ? "var(--color-primary)" : categorical(i)}
               radius={isHorizontal ? [0, 4, 4, 0] : [4, 4, 0, 0]}
               maxBarSize={24}
               isAnimationActive={false}
