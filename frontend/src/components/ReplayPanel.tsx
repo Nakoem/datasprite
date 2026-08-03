@@ -9,8 +9,6 @@ import {
   AlertTriangle,
   ArrowLeft,
   ArrowRight,
-  ChevronDown,
-  ChevronRight,
   GitBranch,
   Layers,
   Play,
@@ -56,11 +54,6 @@ export function ReplayPanel({ conversationId }: ReplayPanelProps) {
   const [baseIndex, setBaseIndex] = useState(0);
   const [diff, setDiff] = useState<CheckpointDiffResponse | null>(null);
   const [diffLoading, setDiffLoading] = useState(false);
-
-  // 分组折叠：undefined = 按默认折叠（多查询默认全折叠）
-  const [collapsed, setCollapsed] = useState<Record<number, boolean>>({});
-  const isGroupOpen = (gi: number) =>
-    isMultiQuery ? (collapsed[gi] ?? false) : true;
 
   const loadList = useCallback(async () => {
     setLoadState("loading");
@@ -171,9 +164,6 @@ export function ReplayPanel({ conversationId }: ReplayPanelProps) {
     [checkpoints, selectedIndex],
   );
 
-  const toggleGroup = (gi: number) =>
-    setCollapsed((prev) => ({ ...prev, [gi]: !prev[gi] }));
-
   // ── 加载 / 错误 / 空状态 ──
 
   if (loadState === "loading") {
@@ -248,7 +238,7 @@ export function ReplayPanel({ conversationId }: ReplayPanelProps) {
             max={checkpoints.length - 1}
             value={selectedIndex}
             onChange={(e) => setSelectedIndex(Number(e.target.value))}
-            className="flex-1 accent-moss"
+            className="range range-accent range-sm flex-1"
             aria-label="选择 checkpoint 位置"
           />
           <button
@@ -279,89 +269,83 @@ export function ReplayPanel({ conversationId }: ReplayPanelProps) {
               </span>
             )}
             {selected.has_sql && (
-              <span className="text-moss font-medium">含 SQL</span>
+              <span className="badge badge-outline badge-sm border-moss/30 text-moss">
+                含 SQL
+              </span>
             )}
             {selected.has_result && (
-              <span className="text-moss font-medium">含结果</span>
+              <span className="badge badge-outline badge-sm border-moss/30 text-moss">
+                含结果
+              </span>
             )}
           </div>
         )}
       </div>
 
       {/* 按查询分组的时间线 */}
-      <div className="border-b border-ink/10 bg-white/60 px-6 py-3 space-y-1 max-h-64 overflow-auto">
+      <div className="border-b border-ink/10 bg-white/60 px-6 py-3 max-h-64 space-y-1 overflow-auto">
         {queryGroups.map((group, gi) => {
           const cps = group.checkpoints;
-          const isOpen = isGroupOpen(gi);
 
-          return (
-            <div key={gi} className={isMultiQuery ? "border border-ink/8 bg-white/70" : ""}>
-              {/* 分组标题 — 单查询时省略 */}
-              {isMultiQuery && (
-                <button
-                  type="button"
-                  onClick={() => toggleGroup(gi)}
-                  className="w-full flex items-center gap-2 px-3 py-2 hover:bg-ink/[0.03] transition text-left"
-                >
-                  {isOpen ? (
-                    <ChevronDown className="h-3.5 w-3.5 text-ink/35 shrink-0" />
-                  ) : (
-                    <ChevronRight className="h-3.5 w-3.5 text-ink/35 shrink-0" />
-                  )}
-                  <span className="text-xs font-semibold text-ink/60">
-                    查询 #{gi + 1}
-                  </span>
-                  <span className="text-xs text-ink/50 truncate max-w-[320px]">
-                    {group.query}
-                  </span>
-                  <span className="text-[10px] text-ink/35 ml-auto shrink-0">
-                    {cps.length} 步
-                  </span>
-                </button>
-              )}
-
-              {/* 步骤标签行 */}
-              {isOpen && (
-                <div className={isMultiQuery ? "px-3 pb-2.5" : ""}>
-                  <div className="flex flex-wrap gap-x-1 gap-y-0.5">
-                    {cps.map((cp, ci) => {
-                      const actualIdx = group.startIndex + ci;
-                      const isActive = actualIdx === selectedIndex;
-                      return (
-                        <button
-                          key={cp.checkpoint_id}
-                          type="button"
-                          onClick={() =>
-                            setSelectedIndex(actualIdx)
-                          }
-                          className={`shrink-0 text-[10px] px-1.5 py-0.5 rounded transition ${
-                            isActive
-                              ? "bg-moss/15 text-moss font-semibold"
-                              : "text-ink/40 hover:bg-ink/5 hover:text-ink/60"
-                          }`}
-                        >
-                          {shortLabel(cp.step_label)}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+          /* 分组标题 + 步骤标签行：多查询时用 collapse（默认收起），单查询直接展开 */
+          const labelRow = (
+            <div className="flex flex-wrap gap-x-1 gap-y-0.5">
+              {cps.map((cp, ci) => {
+                const actualIdx = group.startIndex + ci;
+                const isActive = actualIdx === selectedIndex;
+                return (
+                  <button
+                    key={cp.checkpoint_id}
+                    type="button"
+                    onClick={() => setSelectedIndex(actualIdx)}
+                    className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] transition ${
+                      isActive
+                        ? "bg-moss/15 font-semibold text-moss"
+                        : "text-ink/40 hover:bg-ink/5 hover:text-ink/60"
+                    }`}
+                  >
+                    {shortLabel(cp.step_label)}
+                  </button>
+                );
+              })}
             </div>
+          );
+
+          return isMultiQuery ? (
+            <div
+              key={gi}
+              className="collapse collapse-arrow border border-ink/8 bg-white/70"
+            >
+              <input type="checkbox" className="peer" />
+              <div className="collapse-title flex items-center gap-2 px-3 py-2 text-left">
+                <span className="text-xs font-semibold text-ink/60">
+                  查询 #{gi + 1}
+                </span>
+                <span className="max-w-[320px] truncate text-xs text-ink/50">
+                  {group.query}
+                </span>
+                <span className="ml-auto shrink-0 text-[10px] text-ink/35">
+                  {cps.length} 步
+                </span>
+              </div>
+              <div className="collapse-content px-3 pb-2.5">{labelRow}</div>
+            </div>
+          ) : (
+            <div key={gi}>{labelRow}</div>
           );
         })}
       </div>
 
       {/* 内容区：State / Diff */}
       <div className="flex-1 overflow-auto">
-        <div className="flex items-center border-b border-ink/10 bg-white/60 px-6">
+        <div className="tabs tabs-bordered bg-white/60 px-6">
           <button
             type="button"
             onClick={() => setTab("state")}
-            className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium border-b-2 transition ${
+            className={`tab tab-sm gap-1.5 ${
               tab === "state"
-                ? "border-moss text-moss"
-                : "border-transparent text-ink/45 hover:text-ink/65"
+                ? "tab-active text-moss"
+                : "text-ink/45 hover:text-ink/65"
             }`}
           >
             <Layers className="h-3.5 w-3.5" />
@@ -370,10 +354,10 @@ export function ReplayPanel({ conversationId }: ReplayPanelProps) {
           <button
             type="button"
             onClick={() => setTab("diff")}
-            className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium border-b-2 transition ${
+            className={`tab tab-sm gap-1.5 ${
               tab === "diff"
-                ? "border-moss text-moss"
-                : "border-transparent text-ink/45 hover:text-ink/65"
+                ? "tab-active text-moss"
+                : "text-ink/45 hover:text-ink/65"
             }`}
           >
             <GitBranch className="h-3.5 w-3.5" />
@@ -403,13 +387,13 @@ export function ReplayPanel({ conversationId }: ReplayPanelProps) {
         {/* Diff */}
         {tab === "diff" && (
           <div className="p-6">
-            <div className="flex items-center gap-4 mb-4 text-xs">
+            <div className="mb-4 flex items-center gap-4 text-xs">
               <label className="flex items-center gap-1.5 text-ink/55">
                 Base:
                 <select
                   value={baseIndex}
                   onChange={(e) => setBaseIndex(Number(e.target.value))}
-                  className="border border-ink/15 bg-white px-2 py-1 text-xs focus:outline-none focus:border-moss"
+                  className="select select-bordered select-sm text-xs"
                 >
                   {checkpoints.map((cp, i) => (
                     <option key={cp.checkpoint_id} value={i}>
@@ -424,7 +408,7 @@ export function ReplayPanel({ conversationId }: ReplayPanelProps) {
                 <select
                   value={selectedIndex}
                   onChange={(e) => setSelectedIndex(Number(e.target.value))}
-                  className="border border-ink/15 bg-white px-2 py-1 text-xs focus:outline-none focus:border-moss"
+                  className="select select-bordered select-sm text-xs"
                 >
                   {checkpoints.map((cp, i) => (
                     <option key={cp.checkpoint_id} value={i}>
@@ -465,17 +449,15 @@ export function ReplayPanel({ conversationId }: ReplayPanelProps) {
                       )}
                     </div>
                     {d.changed && (
-                      <div className="grid grid-cols-2 gap-3 text-[11px] font-mono">
-                        <div>
-                          <span className="text-tomato/70">- Before:</span>
-                          <pre className="mt-0.5 text-ink/50 line-clamp-3">
-                            {JSON.stringify(d.before, null, 2)}
+                      <div className="grid grid-cols-2 gap-3 font-mono text-[11px]">
+                        <div className="mockup-code border border-ink/10 bg-white px-1 text-[11px]">
+                          <pre data-prefix="-" className="line-clamp-3 overflow-x-auto whitespace-pre text-tomato/80">
+                            <code>{JSON.stringify(d.before, null, 2)}</code>
                           </pre>
                         </div>
-                        <div>
-                          <span className="text-moss">+ After:</span>
-                          <pre className="mt-0.5 text-ink/70 line-clamp-3">
-                            {JSON.stringify(d.after, null, 2)}
+                        <div className="mockup-code border border-ink/10 bg-white px-1 text-[11px]">
+                          <pre data-prefix="+" className="line-clamp-3 overflow-x-auto whitespace-pre text-moss">
+                            <code>{JSON.stringify(d.after, null, 2)}</code>
                           </pre>
                         </div>
                       </div>

@@ -1,6 +1,7 @@
 /**
  * 查询结果表格组件
  * 将后端返回的结构化数据归一化为可滚动表格
+ * 改用 DaisyUI card + table-zebra + table-pin-rows（固定表头）
  */
 import { Database, FileJson } from "lucide-react";
 import { normalizeRows } from "../lib/chartDetector";
@@ -25,7 +26,7 @@ export function ResultTable({ data }: { data: unknown }) {
   }
 
   return (
-    <section className="mt-4 overflow-hidden border border-ink/10 bg-white/70 shadow-line">
+    <section className="card card-bordered mt-4 bg-white/70 shadow-line">
       <div className="flex items-center justify-between border-b border-ink/10 px-4 py-3">
         <div className="flex items-center gap-2 text-sm font-semibold text-ink">
           <Database className="h-4 w-4 text-moss" aria-hidden="true" />
@@ -37,15 +38,11 @@ export function ResultTable({ data }: { data: unknown }) {
         </div>
       </div>
       <div className="max-h-[360px] overflow-auto">
-        <table className="min-w-full border-separate border-spacing-0 text-left text-sm">
-          <thead className="sticky top-0 z-10 bg-base-200">
+        <table className="table table-zebra table-pin-rows text-sm">
+          <thead>
             <tr>
               {columns.map((column) => (
-                <th
-                  key={column}
-                  scope="col"
-                  className="border-b border-ink/10 px-4 py-3 font-semibold text-ink/70"
-                >
+                <th key={column} scope="col">
                   {column}
                 </th>
               ))}
@@ -53,11 +50,9 @@ export function ResultTable({ data }: { data: unknown }) {
           </thead>
           <tbody>
             {rows.map((row, rowIndex) => (
-              <tr key={rowIndex} className="odd:bg-white/45 even:bg-white/20">
+              <tr key={rowIndex}>
                 {columns.map((column) => (
-                  <td key={column} className="border-b border-ink/5 px-4 py-3 text-ink/80">
-                    {formatCell(row[column])}
-                  </td>
+                  <td key={column}>{formatCell(row[column])}</td>
                 ))}
               </tr>
             ))}

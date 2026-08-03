@@ -21,7 +21,7 @@
  * - Tooltip 增强不关守（值可 table view 获取）
  */
 
-import { useMemo, useState, useCallback, useRef, useEffect } from "react";
+import { useMemo, useState, useCallback } from "react";
 import {
   ResponsiveContainer,
   BarChart,
@@ -171,7 +171,7 @@ function ChartShell({
     ? `${hint.measureCols.join(" / ")} 按 ${hint.dimensionCol}${hint.dimensionCol2 ? ` × ${hint.dimensionCol2}` : ""}`
     : hint.measureCols.join(" / ");
   return (
-    <section className="overflow-hidden border border-ink/10 bg-white/70 shadow-line">
+    <section className="card card-bordered overflow-hidden bg-white/70 shadow-line">
       <div className="flex items-center justify-between border-b border-ink/10 px-4 py-3">
         <span className="text-sm font-semibold text-ink">{title}</span>
       </div>
@@ -664,24 +664,9 @@ export function ChartView({ data, query }: { data: unknown; query?: string }) {
   const rows = useMemo(() => normalizeRows(data), [data]);
   const isEmpty = !data || (Array.isArray(data) && data.length === 0);
 
-  // 导出下拉（hooks 必须在 early return 之前）
-  const [exportOpen, setExportOpen] = useState(false);
-  const exportRef = useRef<HTMLDivElement | null>(null);
-  useEffect(() => {
-    if (!exportOpen) return;
-    const close = (e: MouseEvent) => {
-      if (exportRef.current && !exportRef.current.contains(e.target as Node)) {
-        setExportOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
-  }, [exportOpen]);
-
   const handleExport = useCallback(
     (fn: (rows: ReturnType<typeof normalizeRows>) => void) => {
       fn(normalizeRows(data));
-      setExportOpen(false);
     },
     [data],
   );
@@ -690,15 +675,17 @@ export function ChartView({ data, query }: { data: unknown; query?: string }) {
   if (isEmpty) {
     return (
       <section className="mt-4">
-        <div className="flex flex-col items-center gap-4 border border-ink/10 bg-white/70 px-6 py-14">
-          <div className="grid h-14 w-14 place-items-center rounded-full bg-ink/5">
-            <SearchX className="h-6 w-6 text-ink/30" aria-hidden="true" />
-          </div>
-          <div className="text-center">
-            <p className="text-sm font-semibold text-ink/60">没有符合条件的数据</p>
-            <p className="mt-1.5 text-xs text-ink/40">
-              可能的原因：筛选条件过紧、数据尚未入库、或时间范围无匹配记录
-            </p>
+        <div className="hero border border-ink/10 bg-white/70">
+          <div className="hero-content flex flex-col items-center gap-4 py-14 text-center">
+            <div className="grid h-14 w-14 place-items-center rounded-full bg-ink/5">
+              <SearchX className="h-6 w-6 text-ink/30" aria-hidden="true" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-ink/60">没有符合条件的数据</p>
+              <p className="mt-1.5 text-xs text-ink/40">
+                可能的原因：筛选条件过紧、数据尚未入库、或时间范围无匹配记录
+              </p>
+            </div>
           </div>
         </div>
       </section>
@@ -709,74 +696,76 @@ export function ChartView({ data, query }: { data: unknown; query?: string }) {
     <section className="mt-4">
       {/* 视图切换 + 导出 */}
       <div className="mb-2 flex items-center gap-1">
-        {canChart && (
+        <div className="join">
+          {canChart && (
+            <button
+              type="button"
+              onClick={() => switchView("chart")}
+              className={`join-item btn btn-sm normal-case ${
+                view === "chart" ? "btn-active" : "btn-ghost"
+              }`}
+            >
+              {Icon && <Icon className="h-3.5 w-3.5" />}
+              图表
+            </button>
+          )}
           <button
             type="button"
-            onClick={() => switchView("chart")}
-            className={`inline-flex items-center gap-1.5 rounded px-3 py-2 text-xs font-medium transition focus:outline-none focus:ring-2 focus:ring-moss/40 ${
-              view === "chart"
-                ? "bg-moss/12 text-moss"
-                : "text-ink/45 hover:text-ink/70"
+            onClick={() => switchView("table")}
+            className={`join-item btn btn-sm normal-case ${
+              view === "table" || !canChart ? "btn-active" : "btn-ghost"
             }`}
           >
-            {Icon && <Icon className="h-3.5 w-3.5" />}
-            图表
+            <Table2 className="h-3.5 w-3.5" />
+            表格
           </button>
-        )}
-        <button
-          type="button"
-          onClick={() => switchView("table")}
-          className={`inline-flex items-center gap-1.5 rounded px-3 py-2 text-xs font-medium transition focus:outline-none focus:ring-2 focus:ring-moss/40 ${
-            view === "table" || !canChart
-              ? canChart
-                ? "bg-moss/12 text-moss"
-                : "text-ink/45"
-              : "text-ink/45 hover:text-ink/70"
-          }`}
-        >
-          <Table2 className="h-3.5 w-3.5" />
-          表格
-        </button>
+        </div>
         {hint.reason && (
           <span className="ml-2 text-xs text-ink/35">{hint.reason}</span>
         )}
 
         {/* 导出下拉 */}
-        <div className="relative ml-auto" ref={exportRef}>
+        <div className="dropdown dropdown-end ml-auto">
           <button
             type="button"
-            onClick={() => setExportOpen((v) => !v)}
-            aria-expanded={exportOpen}
-            aria-haspopup="menu"
-            className="inline-flex items-center gap-1 rounded px-3 py-2 text-xs font-medium text-ink/45 transition hover:text-ink/70 focus:outline-none focus:ring-2 focus:ring-moss/40"
+            tabIndex={0}
+            role="button"
+            className="btn btn-sm btn-ghost normal-case"
           >
             <Download className="h-3.5 w-3.5" />
             导出
-            <ChevronDown className={`h-3 w-3 transition ${exportOpen ? "rotate-180" : ""}`} />
+            <ChevronDown className="h-3 w-3" />
           </button>
-          {exportOpen && (
-            <div
-              role="menu"
-              className="absolute right-0 z-10 mt-1 min-w-[120px] rounded border border-ink/10 bg-white py-1 shadow-panel"
-            >
+          <ul
+            tabIndex={0}
+            className="dropdown-content menu z-10 min-w-[120px] rounded-lg border border-ink/10 bg-white p-1 shadow-panel"
+          >
+            <li>
               <button
                 type="button"
-                role="menuitem"
-                onClick={() => handleExport(exportCSV)}
-                className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-ink/75 transition hover:bg-moss/8 hover:text-ink"
+                onClick={(e) => {
+                  handleExport(exportCSV);
+                  // 点击后 blur 让 dropdown 关闭（focus-within 触发，与旧版点击即关一致）
+                  e.currentTarget.blur();
+                }}
+                className="text-xs"
               >
                 CSV
               </button>
+            </li>
+            <li>
               <button
                 type="button"
-                role="menuitem"
-                onClick={() => handleExport(exportExcel)}
-                className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-ink/75 transition hover:bg-moss/8 hover:text-ink"
+                onClick={(e) => {
+                  handleExport(exportExcel);
+                  e.currentTarget.blur();
+                }}
+                className="text-xs"
               >
                 Excel
               </button>
-            </div>
-          )}
+            </li>
+          </ul>
         </div>
       </div>
 
