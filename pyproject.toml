@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
     "asyncmy>=0.2.11",
+    "bcrypt>=5.0.0",
     "cryptography>=46.0.7",
     "elasticsearch[async]>=8,<9",
     "fastapi[standard]>=0.135.3",
@@ -22,6 +23,7 @@ dependencies = [
     "opentelemetry-exporter-otlp>=1.43.0",
     "opentelemetry-instrumentation-fastapi>=0.64b0",
     "prometheus-fastapi-instrumentator>=8.0.2",
+    "pyjwt>=2.13.0",
     "python-dotenv>=1.2.2",
     "pyyaml>=6.0.3",
     "qdrant-client>=1.17.1",

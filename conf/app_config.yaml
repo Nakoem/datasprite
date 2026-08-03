@@ -53,6 +53,12 @@ llm:
   # 整条 query_sync 管线超时（秒），防 LLM 假死挂起
   query_timeout: 120
 
+jwt:
+  # 登录鉴权密钥，从 .env 注入；未配置时用开发默认值
+  secret: ${oc.env:JWT_SECRET,datasprite-dev-secret-change-me}
+  algorithm: HS256
+  access_token_expire_minutes: 60
+
 rate_limit:
   enable: true
   # 豁免路径前缀：探活 / 监控 / 文档不限流

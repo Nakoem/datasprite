@@ -13,7 +13,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 from starlette.responses import StreamingResponse
 
-from app.api.dependencies import get_query_service, verify_api_key
+from app.api.dependencies import get_current_user, get_query_service, verify_api_key
 from app.api.schemas.ask_schema import AskRequest, AskResponse
 from app.api.schemas.query_schema import QuerySchema
 from app.core.log import logger
@@ -29,6 +29,8 @@ async def query_handler(
     query: QuerySchema,
     # 服务依赖：FastAPI 会调用 get_query_service，递归组装它所需的仓储和客户端
     query_service: Annotated[QueryService, Depends(get_query_service)],
+    # 登录鉴权：必须携带有效 JWT 才能问数（/api/ask 走 X-API-Key，不受此依赖影响）
+    _: None = Depends(get_current_user),
 ):
     """接收用户自然语言问题，并流式返回 LangGraph 工作流输出"""
 

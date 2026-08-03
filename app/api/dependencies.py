@@ -9,8 +9,9 @@ FastAPI 依赖组装
 import os
 from typing import Annotated
 
+import jwt
 from fastapi import Depends, HTTPException, Security
-from fastapi.security import APIKeyHeader
+from fastapi.security import APIKeyHeader, HTTPAuthorizationCredentials, HTTPBearer
 from langchain_huggingface import HuggingFaceEndpointEmbeddings
 from langgraph.graph.state import CompiledStateGraph
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -24,14 +25,18 @@ from app.clients.mysql_client_manager import (
     meta_mysql_client_manager,
 )
 from app.clients.qdrant_client_manager import qdrant_client_manager
+from app.core.security import decode_token
+from app.entities.user import User
 from app.repositories.es.value_es_repository import ValueESRepository
 from app.repositories.mysql.dw.dw_mysql_repository import DWMySQLRepository
 from app.repositories.mysql.meta.checkpoint_repository import CheckpointRepository
 from app.repositories.mysql.meta.conversation_repository import ConversationRepository
 from app.repositories.mysql.meta.meta_mysql_repository import MetaMySQLRepository
+from app.repositories.mysql.meta.user_repository import UserRepository
 from app.repositories.qdrant.column_qdrant_repository import ColumnQdrantRepository
 from app.repositories.qdrant.metric_qdrant_repository import MetricQdrantRepository
 from app.services.audit_service import AuditService
+from app.services.auth_service import AuthService
 from app.services.conversation_service import ConversationService
 from app.services.query_service import QueryService
 
@@ -121,6 +126,55 @@ async def get_conversation_service(
     """组装会话业务服务"""
 
     return ConversationService(conversation_repository)
+
+
+async def get_user_repository(
+    session: Annotated[AsyncSession, Depends(get_meta_session)],
+) -> UserRepository:
+    """基于请求级 Session 创建用户仓储"""
+
+    return UserRepository(session)
+
+
+async def get_auth_service(
+    user_repository: Annotated[UserRepository, Depends(get_user_repository)],
+) -> AuthService:
+    """组装登录鉴权业务服务"""
+
+    return AuthService(user_repository)
+
+
+# ── JWT 登录鉴权依赖 ───────────────────────────────────────
+
+_bearer_scheme = HTTPBearer(auto_error=False)
+
+
+async def get_current_user(
+    credentials: Annotated[
+        HTTPAuthorizationCredentials | None, Security(_bearer_scheme)
+    ],
+    user_repository: Annotated[UserRepository, Depends(get_user_repository)],
+) -> User:
+    """解析 Authorization: Bearer <token>，返回当前登录用户。
+
+    用于保护需要登录态的 API。token 缺失/无效/过期一律 401。
+    """
+    if credentials is None:
+        raise HTTPException(status_code=401, detail="未登录")
+    try:
+        payload = decode_token(credentials.credentials)
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="token 无效或已过期")
+
+    try:
+        user_id = int(payload.get("sub", 0))
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=401, detail="token 无效或已过期")
+
+    user = await user_repository.get_by_id(user_id)
+    if user is None:
+        raise HTTPException(status_code=401, detail="用户不存在")
+    return user
 
 
 async def get_checkpoint_repository(

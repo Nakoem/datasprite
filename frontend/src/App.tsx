@@ -8,6 +8,7 @@ import {
   Eraser,
   History,
   Leaf,
+  LogOut,
   MessageSquarePlus,
   Search,
   Server,
@@ -18,14 +19,18 @@ import { ClarificationPanel } from "./components/ClarificationPanel";
 import { Composer } from "./components/Composer";
 import { ConversationList } from "./components/ConversationList";
 import { EmptyState } from "./components/EmptyState";
+import LoginPage from "./components/LoginPage";
 import { MessageBubble } from "./components/MessageBubble";
 import { ReplayPanel } from "./components/ReplayPanel";
 import {
+  UNAUTHORIZED_EVENT,
   streamQuery,
   fetchConversations,
   fetchConversation,
   deleteConversation,
 } from "./lib/agentApi";
+import { clearToken, getToken } from "./lib/auth";
+import { fetchMe } from "./lib/authApi";
 import { cn, summarizeResult } from "./lib/format";
 import type { AgentEvent, ChatMessage, Conversation, StepState } from "./types/agent";
 
@@ -60,6 +65,9 @@ export default function App() {
   const [activeController, setActiveController] = useState<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
+  // 登录鉴权
+  const [authenticated, setAuthenticated] = useState<boolean>(() => Boolean(getToken()));
+
   // 多轮对话 & 查询历史
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -73,12 +81,42 @@ export default function App() {
     [messages],
   );
 
-  // 组件挂载时加载历史会话列表
+  // 挂载时校验登录态：token 无效（过期/伪造）则清除并回到登录页
   useEffect(() => {
+    if (!getToken()) return;
+    fetchMe()
+      .then(() => setAuthenticated(true))
+      .catch(() => {
+        clearToken();
+        setAuthenticated(false);
+      });
+  }, []);
+
+  // 运行中收到 401（token 过期/失效）→ 广播事件 → 回到登录页
+  useEffect(() => {
+    const handler = () => {
+      clearToken();
+      setAuthenticated(false);
+    };
+    window.addEventListener(UNAUTHORIZED_EVENT, handler);
+    return () => window.removeEventListener(UNAUTHORIZED_EVENT, handler);
+  }, []);
+
+  // 登录后加载历史会话列表（未登录时跳过，避免 401）
+  useEffect(() => {
+    if (!authenticated) return;
     fetchConversations()
       .then(setConversations)
       .catch(() => {/* 静默失败，非关键功能 */});
-  }, []);
+  }, [authenticated]);
+
+  /** 退出登录：清除 token 回到登录页 */
+  const handleLogout = () => {
+    if (isStreaming) return;
+    clearToken();
+    setAuthenticated(false);
+    clearConversation();
+  };
 
   useEffect(() => {
     scrollRef.current?.scrollTo({
@@ -268,6 +306,11 @@ export default function App() {
     startQuery(lastUser.content);
   };
 
+  // 未登录 → 渲染登录页；登录成功后进入主界面
+  if (!authenticated) {
+    return <LoginPage onSuccess={() => setAuthenticated(true)} />;
+  }
+
   return (
     <div className="h-dvh overflow-hidden bg-parchment text-ink">
       <div className="pointer-events-none fixed inset-0 bg-[linear-gradient(90deg,rgba(20,17,14,0.045)_1px,transparent_1px),linear-gradient(rgba(20,17,14,0.035)_1px,transparent_1px)] bg-[size:48px_48px]" />
@@ -346,6 +389,15 @@ export default function App() {
           </div>
 
           <div className="border-t border-ink/10 p-4">
+            <button
+              type="button"
+              onClick={handleLogout}
+              disabled={isStreaming}
+              className="mb-3 flex h-9 w-full items-center justify-center gap-2 border border-ink/15 text-xs font-semibold text-ink/60 transition hover:border-tomato/40 hover:text-tomato disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
+              退出登录
+            </button>
             <div className="grid gap-2 text-xs text-ink/55">
               <div className="flex items-center justify-between gap-3">
                 <span className="inline-flex items-center gap-2">

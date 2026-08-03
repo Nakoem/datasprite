@@ -119,6 +119,15 @@ class RateLimitConfig:
 
 
 @dataclass
+class JWTAuthConfig:
+    """JWT 登录鉴权配置"""
+
+    secret: str
+    algorithm: str = "HS256"
+    access_token_expire_minutes: int = 60
+
+
+@dataclass
 class AppConfig:
     """项目级总配置入口"""
 
@@ -131,6 +140,7 @@ class AppConfig:
     llm: LLMConfig
     redis: RedisConfig
     rate_limit: RateLimitConfig
+    jwt: JWTAuthConfig
 
 
 # 从当前文件位置回到项目根目录，再定位到 conf/app_config.yaml

@@ -6,6 +6,7 @@ FastAPI 应用生命周期管理
 重复初始化。
 """
 
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -20,6 +21,8 @@ from app.clients.mysql_client_manager import (
 from app.clients.qdrant_client_manager import qdrant_client_manager
 from app.clients.redis_client_manager import redis_client_manager
 from app.core.log import logger
+from app.repositories.mysql.meta.user_repository import UserRepository
+from app.services.auth_service import AuthService
 
 
 @asynccontextmanager
@@ -94,6 +97,31 @@ async def lifespan(app: FastAPI):
                     "COMMENT '本次查询涉及的数据来源引用 — 表名+字段详情'"
                 )
             )
+
+        # 用户表：登录鉴权用，首次启动时创建
+        await session.execute(
+            text(
+                """
+                CREATE TABLE IF NOT EXISTS users (
+                    id INT AUTO_INCREMENT PRIMARY KEY COMMENT '用户自增 ID',
+                    username VARCHAR(64) NOT NULL UNIQUE COMMENT '登录用户名',
+                    email VARCHAR(128) COMMENT '邮箱',
+                    password_hash VARCHAR(128) NOT NULL COMMENT 'bcrypt 密码哈希',
+                    created_at DATETIME DEFAULT NOW() COMMENT '创建时间',
+                    updated_at DATETIME DEFAULT NOW() ON UPDATE NOW() COMMENT '最后更新时间'
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+                """
+            )
+        )
+
+        # 首次启动（users 表为空）时 seed 初始管理员账号
+        if (await session.execute(text("SELECT COUNT(*) FROM users"))).scalar() == 0:
+            seed_username = os.getenv("SEED_ADMIN_USERNAME", "admin")
+            seed_password = os.getenv("SEED_ADMIN_PASSWORD", "admin123")
+            await AuthService(UserRepository(session)).seed_admin(
+                seed_username, seed_password
+            )
+
         await session.commit()
 
     # yield 之前是启动逻辑，yield 之后是关闭逻辑；中间阶段由 FastAPI 正常处理请求

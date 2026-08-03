@@ -2,7 +2,10 @@
  * 智能体接口客户端
  * 封装后端 /api/query SSE 流式接口请求与事件解析逻辑，
  * 以及会话历史的 CRUD 接口。
+ *
+ * 所有请求自动携带登录 JWT（Authorization: Bearer），收到 401 时清除登录态。
  */
+import { clearToken, getToken } from "./auth";
 import type {
   AgentEvent,
   AuditTrailResponse,
@@ -20,6 +23,26 @@ type QueryOptions = {
   onEvent: (event: AgentEvent) => void;
 };
 
+/** 组装请求头：统一带上登录 token */
+function authHeaders(extra: Record<string, string> = {}): Record<string, string> {
+  const headers = { ...extra };
+  const token = getToken();
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  return headers;
+}
+
+/** 401 说明登录已失效：清 token 并广播事件，App 监听后回到登录页 */
+export const UNAUTHORIZED_EVENT = "datasprite:unauthorized";
+
+function handleAuthError(response: Response) {
+  if (response.status === 401) {
+    clearToken();
+    window.dispatchEvent(new Event(UNAUTHORIZED_EVENT));
+  }
+}
+
 export async function streamQuery(
   query: string,
   options: QueryOptions,
@@ -27,15 +50,16 @@ export async function streamQuery(
 ) {
   const response = await fetch(`${API_BASE_URL}/api/query`, {
     method: "POST",
-    headers: {
+    headers: authHeaders({
       "Content-Type": "application/json",
       Accept: "text/event-stream",
-    },
+    }),
     body: JSON.stringify({ query, conversation_id: conversationId || undefined }),
     signal: options.signal,
   });
 
   if (!response.ok) {
+    handleAuthError(response);
     throw new Error(`接口请求失败：HTTP ${response.status}`);
   }
 
@@ -93,16 +117,22 @@ function parseSseChunk(chunk: string): AgentEvent | null {
 // ── 会话历史 API ──
 
 export async function fetchConversations(): Promise<Conversation[]> {
-  const response = await fetch(`${API_BASE_URL}/api/conversations`);
+  const response = await fetch(`${API_BASE_URL}/api/conversations`, {
+    headers: authHeaders(),
+  });
   if (!response.ok) {
+    handleAuthError(response);
     throw new Error(`获取会话列表失败：HTTP ${response.status}`);
   }
   return response.json();
 }
 
 export async function fetchConversation(id: string): Promise<ConversationDetail> {
-  const response = await fetch(`${API_BASE_URL}/api/conversations/${id}`);
+  const response = await fetch(`${API_BASE_URL}/api/conversations/${id}`, {
+    headers: authHeaders(),
+  });
   if (!response.ok) {
+    handleAuthError(response);
     throw new Error(`获取会话详情失败：HTTP ${response.status}`);
   }
   return response.json();
@@ -111,8 +141,10 @@ export async function fetchConversation(id: string): Promise<ConversationDetail>
 export async function deleteConversation(id: string): Promise<void> {
   const response = await fetch(`${API_BASE_URL}/api/conversations/${id}`, {
     method: "DELETE",
+    headers: authHeaders(),
   });
   if (!response.ok) {
+    handleAuthError(response);
     throw new Error(`删除会话失败：HTTP ${response.status}`);
   }
 }
@@ -124,8 +156,10 @@ export async function fetchAuditTrail(
 ): Promise<AuditTrailResponse> {
   const response = await fetch(
     `${API_BASE_URL}/api/conversations/${conversationId}/audit`,
+    { headers: authHeaders() },
   );
   if (!response.ok) {
+    handleAuthError(response);
     throw new Error(`获取审计日志失败：HTTP ${response.status}`);
   }
   return response.json();
@@ -136,8 +170,10 @@ export async function fetchCheckpoints(
 ): Promise<CheckpointListResponse> {
   const response = await fetch(
     `${API_BASE_URL}/api/conversations/${conversationId}/checkpoints`,
+    { headers: authHeaders() },
   );
   if (!response.ok) {
+    handleAuthError(response);
     throw new Error(`获取检查点列表失败：HTTP ${response.status}`);
   }
   return response.json();
@@ -149,8 +185,10 @@ export async function fetchCheckpointDetail(
 ): Promise<CheckpointDetail> {
   const response = await fetch(
     `${API_BASE_URL}/api/conversations/${conversationId}/checkpoints/${checkpointId}`,
+    { headers: authHeaders() },
   );
   if (!response.ok) {
+    handleAuthError(response);
     throw new Error(`获取检查点详情失败：HTTP ${response.status}`);
   }
   return response.json();
@@ -162,8 +200,9 @@ export async function fetchCheckpointDiff(
   baseId: string,
 ): Promise<CheckpointDiffResponse> {
   const url = `${API_BASE_URL}/api/conversations/${conversationId}/checkpoints/${targetId}/diff?base=${baseId}`;
-  const response = await fetch(url);
+  const response = await fetch(url, { headers: authHeaders() });
   if (!response.ok) {
+    handleAuthError(response);
     throw new Error(`获取检查点差异失败：HTTP ${response.status}`);
   }
   return response.json();
