@@ -38,8 +38,8 @@ export function MessageBubble({ message, onClarificationSelect, onRetry }: Messa
     <article className={cn("group chat", isUser ? "chat-end" : "chat-start")}>
       {!isUser && (
         <div className="chat-image avatar self-start">
-          {/* 问数精灵 🧚 头像，与 favicon / 登录页 logo 同款 moss 渐变 */}
-          <div className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-moss to-[#7BA36C] text-white ring-1 ring-ink/10">
+          {/* 问数精灵 🧚 头像，底色随主题自适应（wireframe=黑 / datasprite=墨），与登录页 logo 同款 base-content 纯色底 */}
+          <div className="grid h-9 w-9 place-items-center rounded-full bg-base-content text-base-100 ring-1 ring-ink/10">
             <span className="text-lg leading-none" aria-hidden="true">🧚</span>
           </div>
         </div>
