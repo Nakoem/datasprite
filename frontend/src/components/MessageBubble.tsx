@@ -10,6 +10,7 @@ import { SourceCard } from "./SourceCard";
 import { StepRail } from "./StepRail";
 import { SummaryCard } from "./SummaryCard";
 import { cn, formatTime, toClipboardText } from "../lib/format";
+import { showToast } from "../lib/toast";
 import type { ChatMessage } from "../types/agent";
 
 type MessageBubbleProps = {
@@ -25,7 +26,12 @@ export function MessageBubble({ message, onClarificationSelect, onRetry }: Messa
 
   const copy = async () => {
     const text = message.result ? toClipboardText(message.result) : message.content;
-    await navigator.clipboard.writeText(text);
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast("已复制到剪贴板");
+    } catch {
+      showToast("复制失败，请重试", "error");
+    }
   };
 
   return (

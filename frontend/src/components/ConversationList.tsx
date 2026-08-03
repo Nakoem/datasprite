@@ -39,6 +39,13 @@ export function ConversationList({
   onDelete,
 }: ConversationListProps) {
   const [hoverId, setHoverId] = useState<string | null>(null);
+  // 待删除会话（非 null 时弹确认 modal）
+  const [deleteTarget, setDeleteTarget] = useState<Conversation | null>(null);
+
+  const confirmDelete = () => {
+    if (deleteTarget) onDelete(deleteTarget.id);
+    setDeleteTarget(null);
+  };
 
   if (conversations.length === 0) {
     return (
@@ -51,6 +58,7 @@ export function ConversationList({
   }
 
   return (
+    <>
     <ul className="menu menu-vertical gap-0.5 px-0 py-0">
       {conversations.map((conv) => {
         const isActive = conv.id === activeId;
@@ -87,7 +95,7 @@ export function ConversationList({
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  onDelete(conv.id);
+                  setDeleteTarget(conv);
                 }}
                 className="btn btn-circle btn-ghost btn-xs absolute right-2 top-1/2 -translate-y-1/2 text-ink/30 hover:text-tomato"
                 title="删除"
@@ -100,5 +108,28 @@ export function ConversationList({
         );
       })}
     </ul>
+
+    {/* 删除确认 modal（避免误删） */}
+    {deleteTarget && (
+      <div className="modal modal-open" role="dialog" aria-modal="true" aria-label="删除会话确认">
+        <div className="modal-backdrop" onClick={() => setDeleteTarget(null)} />
+        <div className="modal-box">
+          <h3 className="text-lg font-semibold text-ink">删除会话</h3>
+          <p className="py-4 text-sm leading-6 text-ink/70">
+            确定要删除「<span className="font-medium text-ink">{deleteTarget.title}</span>」吗？
+            此操作不可恢复。
+          </p>
+          <div className="modal-action">
+            <button type="button" className="btn btn-ghost" onClick={() => setDeleteTarget(null)}>
+              取消
+            </button>
+            <button type="button" className="btn btn-error text-white" onClick={confirmDelete}>
+              删除
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }

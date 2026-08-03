@@ -56,6 +56,7 @@ import {
 import { detectChartType, normalizeRows } from "../lib/chartDetector";
 import { CHROME, categorical, EMPHASIS, SEQUENTIAL } from "../lib/chartColors";
 import { exportCSV, exportExcel } from "../lib/export";
+import { showToast } from "../lib/toast";
 import { ResultTable } from "./ResultTable";
 import type { ChartHint } from "../types/agent";
 
@@ -665,8 +666,9 @@ export function ChartView({ data, query }: { data: unknown; query?: string }) {
   const isEmpty = !data || (Array.isArray(data) && data.length === 0);
 
   const handleExport = useCallback(
-    (fn: (rows: ReturnType<typeof normalizeRows>) => void) => {
+    (label: string, fn: (rows: ReturnType<typeof normalizeRows>) => void) => {
       fn(normalizeRows(data));
+      showToast(`${label} 已导出`);
     },
     [data],
   );
@@ -744,7 +746,7 @@ export function ChartView({ data, query }: { data: unknown; query?: string }) {
               <button
                 type="button"
                 onClick={(e) => {
-                  handleExport(exportCSV);
+                  handleExport("CSV", exportCSV);
                   // 点击后 blur 让 dropdown 关闭（focus-within 触发，与旧版点击即关一致）
                   e.currentTarget.blur();
                 }}
@@ -757,7 +759,7 @@ export function ChartView({ data, query }: { data: unknown; query?: string }) {
               <button
                 type="button"
                 onClick={(e) => {
-                  handleExport(exportExcel);
+                  handleExport("Excel", exportExcel);
                   e.currentTarget.blur();
                 }}
                 className="text-xs"

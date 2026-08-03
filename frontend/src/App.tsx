@@ -9,6 +9,7 @@ import {
   History,
   Leaf,
   LogOut,
+  Menu,
   MessageSquarePlus,
   Search,
   Server,
@@ -32,6 +33,7 @@ import {
 import { clearToken, getToken } from "./lib/auth";
 import { fetchMe } from "./lib/authApi";
 import { cn, summarizeResult } from "./lib/format";
+import { TOAST_EVENT, type ToastType } from "./lib/toast";
 import type { AgentEvent, ChatMessage, Conversation, StepState } from "./types/agent";
 
 const examples = [
@@ -80,6 +82,21 @@ export default function App() {
     () => messages.filter((message) => message.role === "assistant" && message.status === "done").length,
     [messages],
   );
+
+  // 全局 toast 通知（复制/导出等操作反馈）
+  const [toasts, setToasts] = useState<Array<{ id: string; message: string; type: ToastType }>>([]);
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { message, type } = (e as CustomEvent<{ message: string; type: ToastType }>).detail;
+      const id = makeId();
+      setToasts((prev) => [...prev, { id, message, type }]);
+      window.setTimeout(() => {
+        setToasts((prev) => prev.filter((t) => t.id !== id));
+      }, 3000);
+    };
+    window.addEventListener(TOAST_EVENT, handler);
+    return () => window.removeEventListener(TOAST_EVENT, handler);
+  }, []);
 
   // 挂载时校验登录态：token 无效（过期/伪造）则清除并回到登录页
   useEffect(() => {
@@ -311,132 +328,148 @@ export default function App() {
     return <LoginPage onSuccess={() => setAuthenticated(true)} />;
   }
 
+  // 侧栏内容（桌面 aside + 移动端 drawer 复用）
+  const sidebar = (
+    <>
+      <div className="border-b border-ink/10 px-5 py-5">
+        <div className="flex items-center gap-3">
+          <div className="grid h-10 w-10 place-items-center bg-ink text-parchment">
+            <BarChart3 className="h-5 w-5" aria-hidden="true" />
+          </div>
+          <div>
+            <div className="text-base font-semibold tracking-[0.02em]">电商问数</div>
+            <div className="text-xs text-ink/50">DataSprite Agent</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-4 py-4 scrollbar-hide">
+        <button
+          type="button"
+          onClick={clearConversation}
+          disabled={isStreaming}
+          className="btn btn-primary h-11 w-full normal-case"
+        >
+          <MessageSquarePlus className="h-4 w-4" aria-hidden="true" />
+          新会话
+        </button>
+
+        <section>
+          <div className="mb-2 flex items-center gap-2 px-1 text-xs font-semibold uppercase tracking-[0.16em] text-ink/45">
+            <History className="h-3.5 w-3.5" aria-hidden="true" />
+            历史会话
+          </div>
+          <ConversationList
+            conversations={conversations}
+            activeId={conversationId}
+            onSelect={loadConversation}
+            onDelete={handleDeleteConversation}
+          />
+        </section>
+
+        {conversationId && (
+          <section className="border-t border-ink/10 pt-4">
+            <div className="mb-2 flex items-center gap-2 px-1 text-xs font-semibold uppercase tracking-[0.16em] text-ink/45">
+              <Search className="h-3.5 w-3.5" aria-hidden="true" />
+              工具
+            </div>
+            <ul className="menu menu-vertical gap-0.5 px-0 py-0">
+              <li>
+                <button
+                  type="button"
+                  onClick={() => setView("audit")}
+                  className={cn(
+                    "justify-start",
+                    view === "audit" ? "menu-active" : "hover:bg-ink/5",
+                  )}
+                >
+                  审计日志
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  onClick={() => setView("replay")}
+                  className={cn(
+                    "justify-start",
+                    view === "replay" ? "menu-active" : "hover:bg-ink/5",
+                  )}
+                >
+                  流程回放
+                </button>
+              </li>
+            </ul>
+          </section>
+        )}
+      </div>
+
+      <div className="border-t border-ink/10 p-4">
+        <button
+          type="button"
+          onClick={handleLogout}
+          disabled={isStreaming}
+          className="btn btn-outline btn-sm mb-3 h-9 w-full border-ink/15 normal-case text-ink/60 hover:border-tomato/40 hover:text-tomato disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
+          退出登录
+        </button>
+        <div className="grid gap-2 text-xs text-ink/55">
+          <div className="flex items-center justify-between gap-3">
+            <span className="inline-flex items-center gap-2">
+              <Server className="h-3.5 w-3.5" aria-hidden="true" />
+              API
+            </span>
+            <span className="truncate font-mono">{API_BASE_URL}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="inline-flex items-center gap-2">
+              <Activity className="h-3.5 w-3.5" aria-hidden="true" />
+              完成
+            </span>
+            <span>{completedCount}</span>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+
   return (
     <div className="h-dvh overflow-hidden bg-parchment text-ink">
       <div className="pointer-events-none fixed inset-0 bg-[linear-gradient(90deg,rgba(20,17,14,0.045)_1px,transparent_1px),linear-gradient(rgba(20,17,14,0.035)_1px,transparent_1px)] bg-[size:48px_48px]" />
       <div className="pointer-events-none fixed inset-0 grain" />
 
-      <div className="relative grid h-full min-h-0 overflow-hidden lg:grid-cols-[300px_minmax(0,1fr)]">
-        <aside className="hidden min-h-0 border-r border-ink/10 bg-base-200/85 backdrop-blur lg:flex lg:flex-col">
-          <div className="border-b border-ink/10 px-5 py-5">
-            <div className="flex items-center gap-3">
-              <div className="grid h-10 w-10 place-items-center bg-ink text-parchment">
-                <BarChart3 className="h-5 w-5" aria-hidden="true" />
-              </div>
-              <div>
-                <div className="text-base font-semibold tracking-[0.02em]">电商问数</div>
-                <div className="text-xs text-ink/50">DataSprite Agent</div>
-              </div>
-            </div>
-          </div>
+      <div className="drawer h-full">
+        <input id="app-drawer" type="checkbox" className="drawer-toggle" />
 
-          <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-4 py-4 scrollbar-hide">
-            <button
-              type="button"
-              onClick={clearConversation}
-              disabled={isStreaming}
-              className="flex h-11 w-full items-center justify-center gap-2 bg-ink text-sm font-semibold text-parchment transition hover:bg-soot disabled:cursor-not-allowed disabled:bg-ink/35 focus:outline-none focus:ring-2 focus:ring-moss/40 focus:ring-offset-2"
-            >
-              <MessageSquarePlus className="h-4 w-4" aria-hidden="true" />
-              新会话
-            </button>
+        {/* 主内容：桌面侧栏 + 聊天区 */}
+        <div className="drawer-content relative grid h-full min-h-0 overflow-hidden lg:grid-cols-[300px_minmax(0,1fr)]">
+          <aside className="hidden min-h-0 border-r border-ink/10 bg-base-200/85 backdrop-blur lg:flex lg:flex-col">
+            {sidebar}
+          </aside>
 
-            <section>
-              <div className="mb-2 flex items-center gap-2 px-1 text-xs font-semibold uppercase tracking-[0.16em] text-ink/45">
-                <History className="h-3.5 w-3.5" aria-hidden="true" />
-                历史会话
-              </div>
-              <ConversationList
-                conversations={conversations}
-                activeId={conversationId}
-                onSelect={loadConversation}
-                onDelete={handleDeleteConversation}
-              />
-            </section>
-
-            {conversationId && (
-              <section className="border-t border-ink/10 pt-4">
-                <div className="mb-2 flex items-center gap-2 px-1 text-xs font-semibold uppercase tracking-[0.16em] text-ink/45">
-                  <Search className="h-3.5 w-3.5" />
-                  工具
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setView("audit")}
-                  className={cn(
-                    "flex w-full items-center gap-2 px-3 py-2 text-sm transition",
-                    view === "audit"
-                      ? "bg-moss/12 border-l-2 border-moss"
-                      : "text-ink/55 hover:bg-ink/5",
-                  )}
-                >
-                  审计日志
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setView("replay")}
-                  className={cn(
-                    "flex w-full items-center gap-2 px-3 py-2 text-sm transition",
-                    view === "replay"
-                      ? "bg-moss/12 border-l-2 border-moss"
-                      : "text-ink/55 hover:bg-ink/5",
-                  )}
-                >
-                  流程回放
-                </button>
-              </section>
-            )}
-          </div>
-
-          <div className="border-t border-ink/10 p-4">
-            <button
-              type="button"
-              onClick={handleLogout}
-              disabled={isStreaming}
-              className="mb-3 flex h-9 w-full items-center justify-center gap-2 border border-ink/15 text-xs font-semibold text-ink/60 transition hover:border-tomato/40 hover:text-tomato disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
-              退出登录
-            </button>
-            <div className="grid gap-2 text-xs text-ink/55">
-              <div className="flex items-center justify-between gap-3">
-                <span className="inline-flex items-center gap-2">
-                  <Server className="h-3.5 w-3.5" aria-hidden="true" />
-                  API
-                </span>
-                <span className="truncate font-mono">{API_BASE_URL}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="inline-flex items-center gap-2">
-                  <Activity className="h-3.5 w-3.5" aria-hidden="true" />
-                  完成
-                </span>
-                <span>{completedCount}</span>
-              </div>
-            </div>
-          </div>
-        </aside>
-
-        <main className="flex min-h-0 min-w-0 flex-col overflow-hidden">
+          <main className="flex min-h-0 min-w-0 flex-col overflow-hidden">
           <header className="flex h-16 shrink-0 items-center justify-between border-b border-ink/10 bg-parchment/88 px-4 backdrop-blur lg:px-6">
             <div className="flex min-w-0 items-center gap-3">
-              <div className="grid h-9 w-9 shrink-0 place-items-center bg-moss text-white lg:hidden">
-                <BarChart3 className="h-4 w-4" aria-hidden="true" />
-              </div>
+              <label
+                htmlFor="app-drawer"
+                className="btn btn-ghost btn-circle btn-sm lg:hidden"
+                aria-label="打开菜单"
+                title="打开菜单"
+              >
+                <Menu className="h-5 w-5" aria-hidden="true" />
+              </label>
               <div className="min-w-0">
                 <div className="truncate text-sm font-semibold text-ink">DataSprite Agent</div>
                 <div className="truncate text-xs text-ink/45">FastAPI SSE / LangGraph</div>
               </div>
               {conversationId && (
-                <div className="ml-4 flex items-center gap-0.5 border border-ink/10">
+                <div className="join ml-4 hidden sm:flex">
                   <button
                     type="button"
                     onClick={() => setView("chat")}
                     className={cn(
-                      "px-3 py-1.5 text-xs font-medium transition",
-                      view === "chat"
-                        ? "bg-ink text-parchment"
-                        : "text-ink/55 hover:bg-ink/5",
+                      "join-item btn btn-sm normal-case",
+                      view === "chat" ? "btn-active" : "btn-ghost",
                     )}
                   >
                     对话
@@ -445,10 +478,8 @@ export default function App() {
                     type="button"
                     onClick={() => setView("audit")}
                     className={cn(
-                      "px-3 py-1.5 text-xs font-medium transition",
-                      view === "audit"
-                        ? "bg-ink text-parchment"
-                        : "text-ink/55 hover:bg-ink/5",
+                      "join-item btn btn-sm normal-case",
+                      view === "audit" ? "btn-active" : "btn-ghost",
                     )}
                   >
                     审计日志
@@ -457,10 +488,8 @@ export default function App() {
                     type="button"
                     onClick={() => setView("replay")}
                     className={cn(
-                      "px-3 py-1.5 text-xs font-medium transition",
-                      view === "replay"
-                        ? "bg-ink text-parchment"
-                        : "text-ink/55 hover:bg-ink/5",
+                      "join-item btn btn-sm normal-case",
+                      view === "replay" ? "btn-active" : "btn-ghost",
                     )}
                   >
                     回放
@@ -468,18 +497,17 @@ export default function App() {
                 </div>
               )}
             </div>
-            <button
-              type="button"
-              onClick={clearConversation}
-              disabled={messages.length === 0 || isStreaming}
-              className={cn(
-                "grid h-11 w-11 place-items-center rounded-full text-ink/55 transition hover:bg-ink/5 hover:text-ink disabled:cursor-not-allowed disabled:opacity-35 focus:outline-none focus:ring-2 focus:ring-moss/40 focus:ring-offset-2",
-              )}
-              title="清空"
-              aria-label="清空"
-            >
-              <Eraser className="h-4 w-4" aria-hidden="true" />
-            </button>
+            <div className="tooltip tooltip-left" data-tip="清空对话">
+              <button
+                type="button"
+                onClick={clearConversation}
+                disabled={messages.length === 0 || isStreaming}
+                className="grid h-11 w-11 place-items-center rounded-full text-ink/55 transition hover:bg-ink/5 hover:text-ink disabled:cursor-not-allowed disabled:opacity-35 focus:outline-none focus:ring-2 focus:ring-moss/40 focus:ring-offset-2"
+                aria-label="清空"
+              >
+                <Eraser className="h-4 w-4" aria-hidden="true" />
+              </button>
+            </div>
           </header>
 
           <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain scrollbar-hide">
@@ -528,7 +556,33 @@ export default function App() {
             onSubmit={() => startQuery()}
             onStop={stopQuery}
           />
-        </main>
+          </main>
+        </div>
+
+        {/* 移动端 drawer 侧栏 */}
+        <div className="drawer-side z-40 lg:hidden">
+          <label htmlFor="app-drawer" aria-label="关闭侧栏" className="drawer-overlay" />
+          <aside className="flex min-h-full w-72 flex-col border-r border-ink/10 bg-base-200/95 backdrop-blur">
+            {sidebar}
+          </aside>
+        </div>
+      </div>
+
+      {/* 全局 toast */}
+      <div className="toast toast-top toast-end z-50">
+        {toasts.map((t) => (
+          <div
+            key={t.id}
+            className={cn(
+              "alert alert-soft shadow-panel",
+              t.type === "success" && "alert-success",
+              t.type === "error" && "alert-error",
+              t.type === "info" && "alert-info",
+            )}
+          >
+            <span>{t.message}</span>
+          </div>
+        ))}
       </div>
     </div>
   );

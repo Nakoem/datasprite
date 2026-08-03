@@ -63,7 +63,7 @@ export default function LoginPage({ onSuccess }: LoginPageProps) {
             <label className="label" htmlFor="login-username">
               <span className="label-text text-xs font-semibold uppercase tracking-[0.14em] text-ink/45">用户名</span>
             </label>
-            <label className="input input-bordered flex w-full items-center gap-2 border-ink/15 bg-white focus-within:border-moss">
+            <label className={`input input-bordered flex w-full items-center gap-2 focus-within:border-moss ${error ? "input-error border-error bg-error/10" : "border-ink/15 bg-white"}`}>
               <User className="h-4 w-4 shrink-0 text-ink/40" aria-hidden="true" />
               <input
                 id="login-username"
@@ -80,7 +80,7 @@ export default function LoginPage({ onSuccess }: LoginPageProps) {
             <label className="label" htmlFor="login-password">
               <span className="label-text text-xs font-semibold uppercase tracking-[0.14em] text-ink/45">密码</span>
             </label>
-            <label className="input input-bordered flex w-full items-center gap-2 border-ink/15 bg-white focus-within:border-moss">
+            <label className={`input input-bordered flex w-full items-center gap-2 focus-within:border-moss ${error ? "input-error border-error bg-error/10" : "border-ink/15 bg-white"}`}>
               <KeyRound className="h-4 w-4 shrink-0 text-ink/40" aria-hidden="true" />
               <input
                 id="login-password"
