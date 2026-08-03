@@ -20,7 +20,7 @@ export function EmptyState({ examples, onUseExample }: EmptyStateProps) {
   return (
     <div className="mx-auto flex min-h-full max-w-5xl flex-col justify-center px-4 py-12">
       <div className="mb-10 max-w-3xl">
-        <div className="badge badge-outline mb-5 border-moss/25 bg-moss/10 px-3 py-3 text-sm font-semibold text-moss">
+        <div className="badge badge-primary mb-5 px-3 py-3 text-sm font-semibold text-primary-content">
           <Sparkles className="h-4 w-4" aria-hidden="true" />
           智能数据分析系统
         </div>
