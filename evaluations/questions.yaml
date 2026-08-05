@@ -125,13 +125,14 @@ questions:
   - id: q12
     category: 时间趋势
     question: 2025年每个月的销售总额
+    # 月份标签统一用 DATE_FORMAT('%Y-%m')（自然月 YYYY-MM），不用 dim_date.month(1-12)：
+    # 两者业务等价，但结果集对比对分组键格式敏感，用惯用写法避免误判。
     expected_sql: |
-      SELECT d.month AS month, SUM(f.order_amount) AS total_amount
-      FROM fact_order f
-      JOIN dim_date d ON f.date_id = d.date_id
-      WHERE d.year = 2025
-      GROUP BY d.month
-      ORDER BY d.month
+      SELECT DATE_FORMAT(date_id, '%Y-%m') AS month, SUM(order_amount) AS total_amount
+      FROM fact_order
+      WHERE date_id BETWEEN 20250101 AND 20251231
+      GROUP BY DATE_FORMAT(date_id, '%Y-%m')
+      ORDER BY month
 
   - id: q13
     category: 活动维度
@@ -255,12 +256,13 @@ questions:
   - id: r09
     category: 真实历史问题
     question: 按月统计订单数量
+    # 无年份「按月」= 按自然月分组（保留年份，202401…202606 共 30 个月），
+    # 不做跨年折叠；标签用 DATE_FORMAT('%Y-%m') 与 q12 口径一致。
     expected_sql: |
-      SELECT d.month AS month, COUNT(*) AS order_count
-      FROM fact_order f
-      JOIN dim_date d ON f.date_id = d.date_id
-      GROUP BY d.month
-      ORDER BY d.month
+      SELECT DATE_FORMAT(date_id, '%Y-%m') AS month, COUNT(*) AS order_count
+      FROM fact_order
+      GROUP BY DATE_FORMAT(date_id, '%Y-%m')
+      ORDER BY month
 
   - id: r10
     category: 真实历史问题
