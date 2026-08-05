@@ -1,0 +1,159 @@
+# DataSprite 问数评测问题集
+#
+# 每个问题配一条 expected_sql 作为标准答案。评测时把该 SQL 在数仓 DW 上真实执行，
+# 与智能体生成 SQL 的执行结果做「结果集对比」判定正确性（不做 SQL 字面对比，更贴近业务）。
+#
+# 分类约定：
+#   简单聚合 / 时间筛选 / 维度筛选 / 分组TopN / 指标口径 / 时间趋势 / 活动维度 / 库存分析
+#
+# 注意：promotion_name 里 "2025 618全场8折" 用的是空格分隔（无"年"字），来自 seed_extra 生成脚本。
+
+questions:
+  - id: q01
+    category: 简单聚合
+    question: 2025年的销售总额是多少
+    expected_sql: |
+      SELECT SUM(f.order_amount) AS total_amount
+      FROM fact_order f
+      JOIN dim_date d ON f.date_id = d.date_id
+      WHERE d.year = 2025
+
+  - id: q02
+    category: 简单聚合
+    question: 2025年一共产生了多少笔订单
+    expected_sql: |
+      SELECT COUNT(*) AS order_count
+      FROM fact_order f
+      JOIN dim_date d ON f.date_id = d.date_id
+      WHERE d.year = 2025
+
+  - id: q03
+    category: 时间筛选
+    question: 2025年3月的销售总额是多少
+    expected_sql: |
+      SELECT SUM(f.order_amount) AS total_amount
+      FROM fact_order f
+      JOIN dim_date d ON f.date_id = d.date_id
+      WHERE d.year = 2025 AND d.month = 3
+
+  - id: q04
+    category: 时间筛选
+    question: 2025年第一季度的销售额是多少
+    expected_sql: |
+      SELECT SUM(f.order_amount) AS total_amount
+      FROM fact_order f
+      JOIN dim_date d ON f.date_id = d.date_id
+      WHERE d.year = 2025 AND d.quarter = 'Q1'
+
+  - id: q05
+    category: 维度筛选
+    question: 华南地区2025年的销售总额
+    expected_sql: |
+      SELECT SUM(f.order_amount) AS total_amount
+      FROM fact_order f
+      JOIN dim_date d ON f.date_id = d.date_id
+      JOIN dim_region r ON f.region_id = r.region_id
+      WHERE d.year = 2025 AND r.region_name = '华南'
+
+  - id: q06
+    category: 维度筛选
+    question: 2025年手机数码品类的销售额
+    expected_sql: |
+      SELECT SUM(f.order_amount) AS total_amount
+      FROM fact_order f
+      JOIN dim_date d ON f.date_id = d.date_id
+      JOIN dim_product p ON f.product_id = p.product_id
+      WHERE d.year = 2025 AND p.category = '手机数码'
+
+  - id: q07
+    category: 维度筛选
+    question: 2025年苹果品牌的销售额是多少
+    expected_sql: |
+      SELECT SUM(f.order_amount) AS total_amount
+      FROM fact_order f
+      JOIN dim_date d ON f.date_id = d.date_id
+      JOIN dim_product p ON f.product_id = p.product_id
+      WHERE d.year = 2025 AND p.brand = '苹果'
+
+  - id: q08
+    category: 维度筛选
+    question: 2025年铂金会员贡献的订单金额
+    expected_sql: |
+      SELECT SUM(f.order_amount) AS total_amount
+      FROM fact_order f
+      JOIN dim_date d ON f.date_id = d.date_id
+      JOIN dim_customer c ON f.customer_id = c.customer_id
+      WHERE d.year = 2025 AND c.member_level = '铂金'
+
+  - id: q09
+    category: 分组TopN
+    question: 2025年销量最高的5款商品
+    expected_sql: |
+      SELECT p.product_name AS product_name, SUM(f.order_quantity) AS total_quantity
+      FROM fact_order f
+      JOIN dim_date d ON f.date_id = d.date_id
+      JOIN dim_product p ON f.product_id = p.product_id
+      WHERE d.year = 2025
+      GROUP BY p.product_name
+      ORDER BY total_quantity DESC
+      LIMIT 5
+
+  - id: q10
+    category: 分组TopN
+    question: 2024年销售额排名前3的商品
+    expected_sql: |
+      SELECT p.product_name AS product_name, SUM(f.order_amount) AS total_amount
+      FROM fact_order f
+      JOIN dim_date d ON f.date_id = d.date_id
+      JOIN dim_product p ON f.product_id = p.product_id
+      WHERE d.year = 2024
+      GROUP BY p.product_name
+      ORDER BY total_amount DESC
+      LIMIT 3
+
+  - id: q11
+    category: 指标口径
+    question: 2025年的平均客单价是多少
+    expected_sql: |
+      SELECT AVG(f.order_amount) AS aov
+      FROM fact_order f
+      JOIN dim_date d ON f.date_id = d.date_id
+      WHERE d.year = 2025
+
+  - id: q12
+    category: 时间趋势
+    question: 2025年每个月的销售总额
+    expected_sql: |
+      SELECT d.month AS month, SUM(f.order_amount) AS total_amount
+      FROM fact_order f
+      JOIN dim_date d ON f.date_id = d.date_id
+      WHERE d.year = 2025
+      GROUP BY d.month
+      ORDER BY d.month
+
+  - id: q13
+    category: 活动维度
+    question: 2025年618全场8折活动期间的销售额
+    expected_sql: |
+      SELECT SUM(f.order_amount) AS total_amount
+      FROM fact_order f
+      JOIN dim_promotion pr ON f.promotion_id = pr.promotion_id
+      WHERE pr.promotion_name = '2025 618全场8折'
+
+  - id: q14
+    category: 库存分析
+    question: 2025年1月的库存货值是多少
+    expected_sql: |
+      SELECT SUM(fi.stock_quantity * fi.unit_cost) AS inventory_value
+      FROM fact_inventory fi
+      WHERE fi.date_id BETWEEN 20250101 AND 20250131
+
+  - id: q15
+    category: 库存分析
+    question: 2025年1月各仓库的库存货值
+    expected_sql: |
+      SELECT fi.warehouse_location AS warehouse_location,
+             SUM(fi.stock_quantity * fi.unit_cost) AS inventory_value
+      FROM fact_inventory fi
+      WHERE fi.date_id BETWEEN 20250101 AND 20250131
+      GROUP BY fi.warehouse_location

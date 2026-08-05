@@ -28,6 +28,9 @@ uv run ruff format .
 # 本地单跑整条工作流（无需起后端，直连各客户端跑一次问数）
 uv run python -m app.agent.graph
 
+# 问数评测（问题集在 evaluations/questions.yaml，报告落 docs/evaluations/）
+uv run python app/scripts/run_evaluation.py
+
 # 前端（frontend/，React 19 + Vite）
 cd frontend && pnpm install
 pnpm dev        # http://localhost:5173，/api 已代理到 127.0.0.1:8000
@@ -105,7 +108,7 @@ classify_intent  (LLM 意图分类：问数 / 闲聊 / 模糊)
 
 ## 待办清单
 
-功能进度看 [TODO.md](TODO.md)（27 项，已完 13）。优先级：`P0 生产必备` → `P1 体验升级` → `P2 企业级` → `P3 进阶`。
+功能进度看 [TODO.md](TODO.md)（33 项，已完 27）。优先级：`P0 生产必备` → `P1 体验升级` → `P2 企业级` → `P3 进阶`。
 
 ## Git
 
