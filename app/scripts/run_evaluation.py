@@ -54,6 +54,33 @@ def load_questions(path: Path) -> list[dict]:
     return questions
 
 
+# 链路内 LLM 瞬时连接失败（网络抖动）时的整题重试上限与等待基数。
+# 实测遇到 DashScope 连接瞬时中断 6 秒，客户端级 max_retries 也会全撞上，
+# 评测不该因此误杀一道题 —— 但只对"连接/超时类"瞬时错误重试，逻辑错误不重试。
+MAX_GRAPH_RETRIES = 2
+RETRY_BACKOFF = 5  # 秒，按尝试次数递增
+
+# 瞬时错误特征：命中说明是网络/服务端抖动，重试通常能恢复
+_TRANSIENT_MARKERS = (
+    "connection error",
+    "connectionerror",
+    "connect timeout",
+    "apitimeouterror",
+    "apiconnectionerror",
+    "read timeout",
+    "service unavailable",
+    "temporarily unavailable",
+    "429",
+    "502",
+    "503",
+)
+
+
+def _is_transient_error(msg: str) -> bool:
+    m = (msg or "").lower()
+    return any(marker in m for marker in _TRANSIENT_MARKERS)
+
+
 def _normalize_value(v):
     """数值统一取整，避免浮点 / Decimal 精度差异误判不一致"""
     if isinstance(v, bool):
@@ -120,6 +147,7 @@ async def evaluate_one(
         "expected_rows": None,
         "actual_rows": None,
         "elapsed": 0.0,
+        "retries": 0,
     }
     start = time.perf_counter()
 
@@ -132,7 +160,16 @@ async def evaluate_one(
         return result
     result["expected_rows"] = expected_rows
 
-    final_state = await _run_graph(item["question"], context, timeout)
+    # 链路执行带瞬时错误重试：只重试连接/超时类抖动，逻辑错误直接判失败
+    final_state = {}
+    for attempt in range(MAX_GRAPH_RETRIES + 1):
+        final_state = await _run_graph(item["question"], context, timeout)
+        err = final_state.get("_error")
+        if err and attempt < MAX_GRAPH_RETRIES and _is_transient_error(err):
+            result["retries"] = attempt + 1
+            await asyncio.sleep(RETRY_BACKOFF * (attempt + 1))
+            continue
+        break
     result["elapsed"] = round(time.perf_counter() - start, 2)
 
     if "_error" in final_state:
@@ -193,7 +230,8 @@ def _build_report(results: list[dict], started_at: str) -> str:
     lines += ["", "## 明细", "", "| ID | 问题 | 类别 | 结果 | 原因 |", "|----|------|------|------|------|"]
     for r in results:
         mark = "✅" if r["pass"] else "❌"
-        lines.append(f"| {r['id']} | {r['question']} | {r['category']} | {mark} | {r['reason']} |")
+        retry = f"（重试{r['retries']}次）" if r.get("retries") else ""
+        lines.append(f"| {r['id']} | {r['question']} | {r['category']} | {mark} | {r['reason']}{retry} |")
 
     fails = [r for r in results if not r["pass"]]
     if fails:
@@ -257,8 +295,9 @@ async def run(
                 results.append(r)
                 # 控制台用 ASCII 标记（Windows GBK 编码无法打印 ✅/❌），报告文件里才用 emoji
                 mark = "PASS" if r["pass"] else "FAIL"
+                retry = f"（重试{r['retries']}次）" if r.get("retries") else ""
                 print(
-                    f"[{idx}/{total}] {r['id']} {mark} {r['reason']}"
+                    f"[{idx}/{total}] {r['id']} {mark} {r['reason']}{retry}"
                     f"（{r['elapsed']}s）| {r['question']}"
                 )
 

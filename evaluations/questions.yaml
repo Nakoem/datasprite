@@ -5,8 +5,10 @@
 #
 # 分类约定：
 #   简单聚合 / 时间筛选 / 维度筛选 / 分组TopN / 指标口径 / 时间趋势 / 活动维度 / 库存分析
+#   真实历史问题（取自 meta.messages 表里用户真实问过的问题，2026-07 实测）
 #
 # 注意：promotion_name 里 "2025 618全场8折" 用的是空格分隔（无"年"字），来自 seed_extra 生成脚本。
+#   歧义题口径约定（r11/r12）：「当天」= 该日全天订单（date_id 精确匹配），而非按活动过滤。
 
 questions:
   - id: q01
@@ -157,3 +159,139 @@ questions:
       FROM fact_inventory fi
       WHERE fi.date_id BETWEEN 20250101 AND 20250131
       GROUP BY fi.warehouse_location
+
+  # ============ 真实历史问题（用户实际问过）============
+  - id: r01
+    category: 真实历史问题
+    question: 2025年各品类的销售总额排名
+    expected_sql: |
+      SELECT p.category AS category, SUM(f.order_amount) AS total_amount
+      FROM fact_order f
+      JOIN dim_date d ON f.date_id = d.date_id
+      JOIN dim_product p ON f.product_id = p.product_id
+      WHERE d.year = 2025
+      GROUP BY p.category
+      ORDER BY total_amount DESC
+
+  - id: r02
+    category: 真实历史问题
+    question: 统计华东地区各城市的订单总金额，按金额从高到低排列
+    expected_sql: |
+      SELECT c.city AS city, SUM(f.order_amount) AS total_amount
+      FROM fact_order f
+      JOIN dim_region r ON f.region_id = r.region_id
+      JOIN dim_customer c ON f.customer_id = c.customer_id
+      WHERE r.region_name = '华东'
+      GROUP BY c.city
+      ORDER BY total_amount DESC
+
+  - id: r03
+    category: 真实历史问题
+    question: 统计华南地区各产品类别的订单数量
+    expected_sql: |
+      SELECT p.category AS category, COUNT(*) AS order_count
+      FROM fact_order f
+      JOIN dim_region r ON f.region_id = r.region_id
+      JOIN dim_product p ON f.product_id = p.product_id
+      WHERE r.region_name = '华南'
+      GROUP BY p.category
+      ORDER BY order_count DESC
+
+  - id: r04
+    category: 真实历史问题
+    question: 查询2025年各地区的订单销售额
+    expected_sql: |
+      SELECT r.region_name AS region_name, SUM(f.order_amount) AS total_amount
+      FROM fact_order f
+      JOIN dim_date d ON f.date_id = d.date_id
+      JOIN dim_region r ON f.region_id = r.region_id
+      WHERE d.year = 2025
+      GROUP BY r.region_name
+      ORDER BY total_amount DESC
+
+  - id: r05
+    category: 真实历史问题
+    question: 2025年12月各地区的销售额是多少
+    expected_sql: |
+      SELECT r.region_name AS region_name, SUM(f.order_amount) AS total_amount
+      FROM fact_order f
+      JOIN dim_date d ON f.date_id = d.date_id
+      JOIN dim_region r ON f.region_id = r.region_id
+      WHERE d.year = 2025 AND d.month = 12
+      GROUP BY r.region_name
+      ORDER BY total_amount DESC
+
+  - id: r06
+    category: 真实历史问题
+    question: 2025年10月各商品的销量是多少 从高到低排列
+    expected_sql: |
+      SELECT p.product_name AS product_name, SUM(f.order_quantity) AS total_quantity
+      FROM fact_order f
+      JOIN dim_date d ON f.date_id = d.date_id
+      JOIN dim_product p ON f.product_id = p.product_id
+      WHERE d.year = 2025 AND d.month = 10
+      GROUP BY p.product_name
+      ORDER BY total_quantity DESC
+
+  - id: r07
+    category: 真实历史问题
+    question: 统计 2025 年第一季度各大区的 GMV，并按 GMV 从高到低排序
+    expected_sql: |
+      SELECT r.region_name AS region_name, SUM(f.order_amount) AS gmv
+      FROM fact_order f
+      JOIN dim_date d ON f.date_id = d.date_id
+      JOIN dim_region r ON f.region_id = r.region_id
+      WHERE d.year = 2025 AND d.quarter = 'Q1'
+      GROUP BY r.region_name
+      ORDER BY gmv DESC
+
+  - id: r08
+    category: 真实历史问题
+    question: 总共有多少订单
+    expected_sql: |
+      SELECT COUNT(*) AS order_count
+      FROM fact_order
+
+  - id: r09
+    category: 真实历史问题
+    question: 按月统计订单数量
+    expected_sql: |
+      SELECT d.month AS month, COUNT(*) AS order_count
+      FROM fact_order f
+      JOIN dim_date d ON f.date_id = d.date_id
+      GROUP BY d.month
+      ORDER BY d.month
+
+  - id: r10
+    category: 真实历史问题
+    question: 查询2028年的销售额
+    expected_sql: |
+      SELECT SUM(f.order_amount) AS total_amount
+      FROM fact_order f
+      JOIN dim_date d ON f.date_id = d.date_id
+      WHERE d.year = 2028
+
+  - id: r11
+    category: 真实历史问题
+    question: 2024年618当天的销售额是多少
+    expected_sql: |
+      SELECT SUM(f.order_amount) AS total_amount
+      FROM fact_order f
+      WHERE f.date_id = 20240618
+
+  - id: r12
+    category: 真实历史问题
+    question: 2026年情人节那天的销售额是多少
+    expected_sql: |
+      SELECT SUM(f.order_amount) AS total_amount
+      FROM fact_order f
+      WHERE f.date_id = 20260214
+
+  - id: r13
+    category: 真实历史问题
+    question: 统计华北地区的销售总额
+    expected_sql: |
+      SELECT SUM(f.order_amount) AS total_amount
+      FROM fact_order f
+      JOIN dim_region r ON f.region_id = r.region_id
+      WHERE r.region_name = '华北'

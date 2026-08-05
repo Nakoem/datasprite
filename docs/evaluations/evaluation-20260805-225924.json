@@ -1,0 +1,478 @@
+[
+  {
+    "id": "q01",
+    "category": "简单聚合",
+    "question": "2025年的销售总额是多少",
+    "pass": true,
+    "reason": "结果集一致",
+    "generated_sql": "SELECT SUM(order_amount) AS 销售总额 FROM fact_order WHERE date_id BETWEEN 20250101 AND 20251231",
+    "error": null,
+    "expected_rows": [
+      {
+        "total_amount": 3925040.5
+      }
+    ],
+    "actual_rows": [
+      {
+        "销售总额": 3925040.5
+      }
+    ],
+    "elapsed": 75.78
+  },
+  {
+    "id": "q02",
+    "category": "简单聚合",
+    "question": "2025年一共产生了多少笔订单",
+    "pass": true,
+    "reason": "结果集一致",
+    "generated_sql": "SELECT COUNT(order_id) AS 订单笔数 FROM fact_order WHERE date_id BETWEEN 20250101 AND 20251231",
+    "error": null,
+    "expected_rows": [
+      {
+        "order_count": 2362
+      }
+    ],
+    "actual_rows": [
+      {
+        "订单笔数": 2362
+      }
+    ],
+    "elapsed": 93.62
+  },
+  {
+    "id": "q03",
+    "category": "时间筛选",
+    "question": "2025年3月的销售总额是多少",
+    "pass": true,
+    "reason": "结果集一致",
+    "generated_sql": "SELECT SUM(order_amount) AS 销售总额 FROM fact_order WHERE date_id BETWEEN 20250301 AND 20250331",
+    "error": null,
+    "expected_rows": [
+      {
+        "total_amount": 90120.0
+      }
+    ],
+    "actual_rows": [
+      {
+        "销售总额": 90120.0
+      }
+    ],
+    "elapsed": 97.72
+  },
+  {
+    "id": "q04",
+    "category": "时间筛选",
+    "question": "2025年第一季度的销售额是多少",
+    "pass": true,
+    "reason": "结果集一致",
+    "generated_sql": "SELECT SUM(f.order_amount) AS 销售额 FROM fact_order f JOIN dim_date d ON f.date_id = d.date_id WHERE d.quarter = 'Q1' AND f.date_id BETWEEN 20250101 AND 20251231",
+    "error": null,
+    "expected_rows": [
+      {
+        "total_amount": 279159.5
+      }
+    ],
+    "actual_rows": [
+      {
+        "销售额": 279159.5
+      }
+    ],
+    "elapsed": 102.09
+  },
+  {
+    "id": "q05",
+    "category": "维度筛选",
+    "question": "华南地区2025年的销售总额",
+    "pass": true,
+    "reason": "结果集一致",
+    "generated_sql": "SELECT SUM(t1.order_amount) AS 销售总额 FROM fact_order t1 JOIN dim_region t2 ON t1.region_id = t2.region_id WHERE t2.region_name = '华南' AND t1.date_id >= 20250101 AND t1.date_id <= 20251231",
+    "error": null,
+    "expected_rows": [
+      {
+        "total_amount": 837673.0
+      }
+    ],
+    "actual_rows": [
+      {
+        "销售总额": 837673.0
+      }
+    ],
+    "elapsed": 85.03
+  },
+  {
+    "id": "q06",
+    "category": "维度筛选",
+    "question": "2025年手机数码品类的销售额",
+    "pass": true,
+    "reason": "结果集一致",
+    "generated_sql": "SELECT SUM(fact_order.order_amount) AS 销售额 FROM fact_order JOIN dim_product ON fact_order.product_id = dim_product.product_id WHERE fact_order.date_id >= 20250101 AND fact_order.date_id <= 20251231 AND dim_product.category = '手机数码'",
+    "error": null,
+    "expected_rows": [
+      {
+        "total_amount": 2572451.0
+      }
+    ],
+    "actual_rows": [
+      {
+        "销售额": 2572451.0
+      }
+    ],
+    "elapsed": 77.09
+  },
+  {
+    "id": "q07",
+    "category": "维度筛选",
+    "question": "2025年苹果品牌的销售额是多少",
+    "pass": false,
+    "reason": "链路执行异常",
+    "generated_sql": null,
+    "error": "Connection error.",
+    "expected_rows": [
+      {
+        "total_amount": 1511832.0
+      }
+    ],
+    "actual_rows": null,
+    "elapsed": 22.43
+  },
+  {
+    "id": "q08",
+    "category": "维度筛选",
+    "question": "2025年铂金会员贡献的订单金额",
+    "pass": false,
+    "reason": "链路执行异常",
+    "generated_sql": null,
+    "error": "Connection error.",
+    "expected_rows": [
+      {
+        "total_amount": 604151.5
+      }
+    ],
+    "actual_rows": null,
+    "elapsed": 6.48
+  },
+  {
+    "id": "q09",
+    "category": "分组TopN",
+    "question": "2025年销量最高的5款商品",
+    "pass": true,
+    "reason": "结果集一致",
+    "generated_sql": "SELECT p.product_name AS 商品名称, SUM(o.order_quantity) AS 销量 FROM fact_order o JOIN dim_product p ON o.product_id = p.product_id WHERE o.date_id >= 20250101 AND o.date_id <= 20251231 GROUP BY p.product_id, p.product_name ORDER BY 销量 DESC LIMIT 5",
+    "error": null,
+    "expected_rows": [
+      {
+        "product_name": "蒙牛纯牛奶 250ml*12",
+        "total_quantity": 526.0
+      },
+      {
+        "product_name": "奥利奥巧克力夹心饼干",
+        "total_quantity": 493.0
+      },
+      {
+        "product_name": "乐事原味薯片 150g",
+        "total_quantity": 472.0
+      },
+      {
+        "product_name": "雀巢金牌速溶咖啡",
+        "total_quantity": 462.0
+      },
+      {
+        "product_name": "完美日记丝绒哑光口红",
+        "total_quantity": 454.0
+      }
+    ],
+    "actual_rows": [
+      {
+        "商品名称": "蒙牛纯牛奶 250ml*12",
+        "销量": 526.0
+      },
+      {
+        "商品名称": "奥利奥巧克力夹心饼干",
+        "销量": 493.0
+      },
+      {
+        "商品名称": "乐事原味薯片 150g",
+        "销量": 472.0
+      },
+      {
+        "商品名称": "雀巢金牌速溶咖啡",
+        "销量": 462.0
+      },
+      {
+        "商品名称": "完美日记丝绒哑光口红",
+        "销量": 454.0
+      }
+    ],
+    "elapsed": 77.79
+  },
+  {
+    "id": "q10",
+    "category": "分组TopN",
+    "question": "2024年销售额排名前3的商品",
+    "pass": true,
+    "reason": "结果集一致",
+    "generated_sql": "SELECT p.product_name AS 商品名称, SUM(o.order_amount) AS 销售额 FROM fact_order o JOIN dim_product p ON o.product_id = p.product_id WHERE o.date_id >= 20240101 AND o.date_id <= 20241231 GROUP BY p.product_name ORDER BY 销售额 DESC LIMIT 3",
+    "error": null,
+    "expected_rows": [
+      {
+        "product_name": "iPhone 15 Pro",
+        "total_amount": 1952783.0
+      },
+      {
+        "product_name": "Mate 60 Pro",
+        "total_amount": 727896.0
+      },
+      {
+        "product_name": "美的空调 KFR-35GW",
+        "total_amount": 294400.0
+      }
+    ],
+    "actual_rows": [
+      {
+        "商品名称": "iPhone 15 Pro",
+        "销售额": 1952783.0
+      },
+      {
+        "商品名称": "Mate 60 Pro",
+        "销售额": 727896.0
+      },
+      {
+        "商品名称": "美的空调 KFR-35GW",
+        "销售额": 294400.0
+      }
+    ],
+    "elapsed": 128.79
+  },
+  {
+    "id": "q11",
+    "category": "指标口径",
+    "question": "2025年的平均客单价是多少",
+    "pass": true,
+    "reason": "结果集一致",
+    "generated_sql": "SELECT AVG(order_amount) AS 平均客单价 FROM fact_order WHERE date_id BETWEEN 20250101 AND 20251231;",
+    "error": null,
+    "expected_rows": [
+      {
+        "aov": 1661.7444961896697
+      }
+    ],
+    "actual_rows": [
+      {
+        "平均客单价": 1661.7444961896697
+      }
+    ],
+    "elapsed": 149.5
+  },
+  {
+    "id": "q12",
+    "category": "时间趋势",
+    "question": "2025年每个月的销售总额",
+    "pass": false,
+    "reason": "结果集不一致",
+    "generated_sql": "SELECT\n    date_id DIV 100 AS 月份,\n    SUM(order_amount) AS 销售总额\nFROM\n    fact_order\nWHERE\n    date_id >= 20250101 AND date_id <= 20251231\nGROUP BY\n    date_id DIV 100\nORDER BY\n    月份;",
+    "error": null,
+    "expected_rows": [
+      {
+        "month": 1,
+        "total_amount": 109030.5
+      },
+      {
+        "month": 2,
+        "total_amount": 80009.0
+      },
+      {
+        "month": 3,
+        "total_amount": 90120.0
+      },
+      {
+        "month": 4,
+        "total_amount": 385404.0
+      },
+      {
+        "month": 5,
+        "total_amount": 379584.5
+      },
+      {
+        "month": 6,
+        "total_amount": 556087.5
+      },
+      {
+        "month": 7,
+        "total_amount": 320484.5
+      },
+      {
+        "month": 8,
+        "total_amount": 348914.0
+      },
+      {
+        "month": 9,
+        "total_amount": 333795.5
+      },
+      {
+        "month": 10,
+        "total_amount": 494747.0
+      },
+      {
+        "month": 11,
+        "total_amount": 479970.5
+      },
+      {
+        "month": 12,
+        "total_amount": 346893.5
+      }
+    ],
+    "actual_rows": [
+      {
+        "月份": 202501,
+        "销售总额": 109030.5
+      },
+      {
+        "月份": 202502,
+        "销售总额": 80009.0
+      },
+      {
+        "月份": 202503,
+        "销售总额": 90120.0
+      },
+      {
+        "月份": 202504,
+        "销售总额": 385404.0
+      },
+      {
+        "月份": 202505,
+        "销售总额": 379584.5
+      },
+      {
+        "月份": 202506,
+        "销售总额": 556087.5
+      },
+      {
+        "月份": 202507,
+        "销售总额": 320484.5
+      },
+      {
+        "月份": 202508,
+        "销售总额": 348914.0
+      },
+      {
+        "月份": 202509,
+        "销售总额": 333795.5
+      },
+      {
+        "月份": 202510,
+        "销售总额": 494747.0
+      },
+      {
+        "月份": 202511,
+        "销售总额": 479970.5
+      },
+      {
+        "月份": 202512,
+        "销售总额": 346893.5
+      }
+    ],
+    "elapsed": 103.14
+  },
+  {
+    "id": "q13",
+    "category": "活动维度",
+    "question": "2025年618全场8折活动期间的销售额",
+    "pass": true,
+    "reason": "结果集一致",
+    "generated_sql": "SELECT SUM(fact_order.order_amount) AS 销售额 FROM fact_order JOIN dim_promotion ON fact_order.promotion_id = dim_promotion.promotion_id WHERE dim_promotion.promotion_name = '2025 618全场8折'",
+    "error": null,
+    "expected_rows": [
+      {
+        "total_amount": 112763.5
+      }
+    ],
+    "actual_rows": [
+      {
+        "销售额": 112763.5
+      }
+    ],
+    "elapsed": 192.75
+  },
+  {
+    "id": "q14",
+    "category": "库存分析",
+    "question": "2025年1月的库存货值是多少",
+    "pass": true,
+    "reason": "结果集一致",
+    "generated_sql": "SELECT SUM(fact_inventory.stock_quantity * fact_inventory.unit_cost) AS 库存货值 FROM fact_inventory JOIN dim_date ON fact_inventory.date_id = dim_date.date_id WHERE dim_date.year = 2025 AND dim_date.month = 1",
+    "error": null,
+    "expected_rows": [
+      {
+        "inventory_value": 5250206.47
+      }
+    ],
+    "actual_rows": [
+      {
+        "库存货值": 5250206.47
+      }
+    ],
+    "elapsed": 90.86
+  },
+  {
+    "id": "q15",
+    "category": "库存分析",
+    "question": "2025年1月各仓库的库存货值",
+    "pass": true,
+    "reason": "结果集一致",
+    "generated_sql": "SELECT warehouse_location AS 仓库, SUM(stock_quantity * unit_cost) AS 库存货值 FROM fact_inventory WHERE date_id >= 20250101 AND date_id <= 20250131 GROUP BY warehouse_location",
+    "error": null,
+    "expected_rows": [
+      {
+        "warehouse_location": "华南仓",
+        "inventory_value": 2062019.97
+      },
+      {
+        "warehouse_location": "西北仓",
+        "inventory_value": 968175.51
+      },
+      {
+        "warehouse_location": "华东仓",
+        "inventory_value": 1103058.81
+      },
+      {
+        "warehouse_location": "华中仓",
+        "inventory_value": 436375.51
+      },
+      {
+        "warehouse_location": "西南仓",
+        "inventory_value": 391601.08
+      },
+      {
+        "warehouse_location": "华北仓",
+        "inventory_value": 288975.59
+      }
+    ],
+    "actual_rows": [
+      {
+        "仓库": "华南仓",
+        "库存货值": 2062019.97
+      },
+      {
+        "仓库": "西北仓",
+        "库存货值": 968175.51
+      },
+      {
+        "仓库": "华东仓",
+        "库存货值": 1103058.81
+      },
+      {
+        "仓库": "华中仓",
+        "库存货值": 436375.51
+      },
+      {
+        "仓库": "西南仓",
+        "库存货值": 391601.08
+      },
+      {
+        "仓库": "华北仓",
+        "库存货值": 288975.59
+      }
+    ],
+    "elapsed": 86.33
+  }
+]
