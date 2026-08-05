@@ -1,5 +1,9 @@
 # DataSprite 问数评测问题集
 #
+# 📊 最新评测：2026-08-06 29/30 = 96.7%（q12「按月分组」格式盲区失败）
+#    完整报告：docs/evaluations/evaluation-20260805-234605.md
+#    历次成绩单：docs/evaluations/evaluation-*.md（每次跑评测留一张带时间戳的档）
+#
 # 每个问题配一条 expected_sql 作为标准答案。评测时把该 SQL 在数仓 DW 上真实执行，
 # 与智能体生成 SQL 的执行结果做「结果集对比」判定正确性（不做 SQL 字面对比，更贴近业务）。
 #
