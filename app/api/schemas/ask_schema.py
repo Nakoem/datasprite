@@ -12,6 +12,7 @@ class AskRequest(BaseModel):
     """外部系统传入的问数请求"""
 
     query: str
+    conversation_id: str | None = None  # 多轮对话 ID：同一会话多轮共用，后端靠它串联上下文记忆
 
 
 class AskResponse(BaseModel):

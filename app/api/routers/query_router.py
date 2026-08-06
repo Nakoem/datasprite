@@ -52,8 +52,14 @@ async def ask_handler(
 
     外部系统通过 X-API-Key 请求头鉴权后，一次调用拿到 SQL + 数据 + AI 摘要。
     """
-    logger.info("外部 API 调用 /api/ask | query={}", body.query[:200])
-    result = await query_service.query_sync(body.query)
+    logger.info(
+        "外部 API 调用 /api/ask | query={} cid={}",
+        body.query[:200],
+        body.conversation_id,
+    )
+    result = await query_service.query_sync(
+        body.query, conversation_id=body.conversation_id
+    )
     return AskResponse(
         sql=result.get("sql"),
         data=result.get("data"),

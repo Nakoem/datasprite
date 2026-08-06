@@ -152,12 +152,15 @@ class QueryService:
             except Exception:
                 logger.exception("保存助手消息失败 | conversation_id=%s", conversation_id)
 
-    async def query_sync(self, query: str) -> dict:
+    async def query_sync(self, query: str, conversation_id: str | None = None) -> dict:
         """同步版问数：直接消费 _run_graph 的 dict chunk，一次性返回。
 
         供 /api/ask 等外部集成接口使用，返回 SQL + 数据 + AI 摘要。
         通过 asyncio.wait_for 包裹全管线，防止 LLM 假死导致请求挂起。
         如果管线返回了澄清追问（ambiguous）而没有任何数据，则记录日志。
+
+        传入 conversation_id 时可与 /api/query 共享同一会话记忆，
+        让「那华北区呢？」这类指代追问能继承上一轮的时间/区域/指标条件。
         """
         result = {
             "sql": None,
@@ -171,7 +174,9 @@ class QueryService:
         seen_types: list[str] = []
 
         async def _collect():
-            async for chunk in self._run_graph(query):
+            async for chunk in self._run_graph(
+                query, conversation_id=conversation_id
+            ):
                 if not isinstance(chunk, dict):
                     continue
 
