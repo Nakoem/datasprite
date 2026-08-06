@@ -1,0 +1,24 @@
+[
+  {
+    "id": "r17",
+    "category": "真实历史问题",
+    "question": "那华北区呢",
+    "pass": true,
+    "reason": "结果集一致",
+    "generated_sql": "SELECT SUM(fact_order.order_quantity) AS 销量 FROM fact_order JOIN dim_region ON fact_order.region_id = dim_region.region_id WHERE dim_region.region_name = '华北' AND fact_order.date_id >= 20240601 AND fact_order.date_id <= 20240630",
+    "error": null,
+    "expected_rows": [
+      {
+        "total_quantity": 124.0
+      }
+    ],
+    "actual_rows": [
+      {
+        "销量": 124.0
+      }
+    ],
+    "elapsed": 71.44,
+    "retries": 0,
+    "context_messages": 2
+  }
+]

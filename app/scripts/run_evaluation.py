@@ -43,6 +43,7 @@ from app.repositories.mysql.meta.meta_mysql_repository import MetaMySQLRepositor
 from app.repositories.qdrant.column_qdrant_repository import ColumnQdrantRepository
 from app.repositories.qdrant.metric_qdrant_repository import MetricQdrantRepository
 from app.scripts.eval_rows import rows_equal
+from app.services.conversation_service import format_history_text
 
 
 def load_questions(path: Path) -> list[dict]:
@@ -81,13 +82,38 @@ def _is_transient_error(msg: str) -> bool:
     return any(marker in m for marker in _TRANSIENT_MARKERS)
 
 
-async def _run_graph(query: str, context: DataAgentContext, timeout: int) -> dict:
+def _format_context(context: list[dict] | None) -> str:
+    """把问题集 YAML 的 context（前置对话）格式化成 conversation_history 文本。
+
+    复用 conversation_service.format_history_text（与真实链路 get_history_for_llm
+    同款格式），保证评测多轮样本时 LLM 看到的上下文与真实链路相同，才能正确解析
+    「那华北区呢」这类指代。无 context 返回空串（单轮行为不变）。
+    """
+    if not context:
+        return ""
+    return format_history_text(
+        [(m.get("role", "user"), m.get("content", "")) for m in context]
+    )
+
+
+async def _run_graph(
+    query: str,
+    context: DataAgentContext,
+    timeout: int,
+    conversation_history: str = "",
+) -> dict:
     """跑完整问数链路，返回 final state；异常时返回 {"_error": ...}。
 
     注意用 _error 前缀做内部哨兵，因为 DataAgentState 本身就有一个 error 字段
     （SQL 校验错误），撞名会让正常结束也被误判为链路异常。
+    conversation_history 非空时是#36 多轮样本：classify_intent 会据历史把
+    follow_up 指代补全成完整问题再走链路。
     """
-    state = DataAgentState(query=query, correct_retry_count=0)
+    state = DataAgentState(
+        query=query,
+        correct_retry_count=0,
+        conversation_history=conversation_history,
+    )
     final = None
     try:
         async def _astream():
@@ -120,6 +146,7 @@ async def evaluate_one(
         "actual_rows": None,
         "elapsed": 0.0,
         "retries": 0,
+        "context_messages": 0,
     }
     start = time.perf_counter()
 
@@ -133,9 +160,13 @@ async def evaluate_one(
     result["expected_rows"] = expected_rows
 
     # 链路执行带瞬时错误重试：只重试连接/超时类抖动，逻辑错误直接判失败
+    conversation_history = _format_context(item.get("context"))
+    result["context_messages"] = len(item.get("context") or [])
     final_state = {}
     for attempt in range(MAX_GRAPH_RETRIES + 1):
-        final_state = await _run_graph(item["question"], context, timeout)
+        final_state = await _run_graph(
+            item["question"], context, timeout, conversation_history
+        )
         err = final_state.get("_error")
         if err and attempt < MAX_GRAPH_RETRIES and _is_transient_error(err):
             result["retries"] = attempt + 1
@@ -203,7 +234,8 @@ def _build_report(results: list[dict], started_at: str) -> str:
     for r in results:
         mark = "✅" if r["pass"] else "❌"
         retry = f"（重试{r['retries']}次）" if r.get("retries") else ""
-        lines.append(f"| {r['id']} | {r['question']} | {r['category']} | {mark} | {r['reason']}{retry} |")
+        mt = f"（多轮{r['context_messages']}条）" if r.get("context_messages") else ""
+        lines.append(f"| {r['id']} | {r['question']} | {r['category']} | {mark} | {r['reason']}{retry}{mt} |")
 
     fails = [r for r in results if not r["pass"]]
     if fails:
