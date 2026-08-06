@@ -1,0 +1,40 @@
+{
+  "handled": {
+    "统计下2025年每月的订单数量|2026-07-30 07:42:15": {
+      "verdict": "defer",
+      "reason": "命中按月分组标签格式漂移盲区，候选使用%Y-%m格式，严格结果集对比易误判，建议暂缓。",
+      "similar_ids": [],
+      "suggested_expected_sql": null,
+      "hard_verified": false,
+      "applied_at": "2026-08-06T21:29:01"
+    },
+    "统计华北地区销售额|2026-07-22 14:26:21": {
+      "verdict": "filter",
+      "reason": "与现有题 r13“统计华北地区的销售总额”语义和口径完全重复，属于近重复问题。",
+      "similar_ids": [
+        "r13"
+      ],
+      "suggested_expected_sql": null,
+      "hard_verified": false,
+      "applied_at": "2026-08-06T21:29:07"
+    },
+    "那华北区呢|2026-08-06 09:17:52": {
+      "verdict": "defer",
+      "reason": "问题为多轮指代，缺少上下文（如时间、指标），命中已知盲区，需人工确认。",
+      "similar_ids": [],
+      "suggested_expected_sql": null,
+      "hard_verified": false,
+      "applied_at": "2026-08-06T21:29:12"
+    },
+    "查2024年6月华东区销量|2026-08-06 09:53:37": {
+      "verdict": "filter",
+      "reason": "与现有评测集中的 r16 问题完全重复，属于近重复样本，建议过滤。",
+      "similar_ids": [
+        "r16"
+      ],
+      "suggested_expected_sql": null,
+      "hard_verified": false,
+      "applied_at": "2026-08-06T21:29:19"
+    }
+  }
+}

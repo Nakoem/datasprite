@@ -19,7 +19,6 @@ import sys
 import time
 from collections import OrderedDict
 from datetime import datetime
-from decimal import Decimal
 from pathlib import Path
 
 # 脚本以文件方式运行（python app/scripts/xxx.py）时 sys.path[0] 是脚本目录，
@@ -43,6 +42,7 @@ from app.repositories.mysql.dw.dw_mysql_repository import DWMySQLRepository
 from app.repositories.mysql.meta.meta_mysql_repository import MetaMySQLRepository
 from app.repositories.qdrant.column_qdrant_repository import ColumnQdrantRepository
 from app.repositories.qdrant.metric_qdrant_repository import MetricQdrantRepository
+from app.scripts.eval_rows import rows_equal
 
 
 def load_questions(path: Path) -> list[dict]:
@@ -79,34 +79,6 @@ _TRANSIENT_MARKERS = (
 def _is_transient_error(msg: str) -> bool:
     m = (msg or "").lower()
     return any(marker in m for marker in _TRANSIENT_MARKERS)
-
-
-def _normalize_value(v):
-    """数值统一取整，避免浮点 / Decimal 精度差异误判不一致"""
-    if isinstance(v, bool):
-        return v
-    if isinstance(v, (int, float, Decimal)):
-        return round(float(v), 6)
-    return v
-
-
-def _canonical_rows(rows: list[dict]) -> list:
-    """每行只取排序后的值元组，整张表再按行排序。
-
-    刻意忽略列名：智能体生成的 SQL 别名可能与期望 SQL 不同（如 total_amount vs
-    销售总额），但数值一致就算答对；列名不一致不应误判。列数不同仍会判不一致。
-    """
-    out = []
-    for row in rows or []:
-        # key=repr 提供全类型稳定全序：None / 数字 / 字符串混排不抛 TypeError
-        values = tuple(sorted((_normalize_value(v) for v in row.values()), key=repr))
-        out.append(values)
-    return sorted(out)
-
-
-def rows_equal(expected: list[dict], actual: list[dict]) -> bool:
-    """结果集对比：期望结果与生成 SQL 结果是否一致"""
-    return _canonical_rows(expected) == _canonical_rows(actual)
 
 
 async def _run_graph(query: str, context: DataAgentContext, timeout: int) -> dict:
@@ -255,8 +227,9 @@ async def run(
     category: str | None = None,
     limit: int | None = None,
     timeout: int = 300,
+    capture: bool = True,
 ) -> int:
-    """初始化依赖，逐题评测，落盘报告，返回通过题数"""
+    """初始化依赖，逐题评测，落盘报告，自动捕获新候选，返回通过题数"""
     meta_mysql_client_manager.init()
     dw_mysql_client_manager.init()
     qdrant_client_manager.init()
@@ -316,6 +289,10 @@ async def run(
             print(f"\n评测完成：{passed}/{total} 通过，正确率 {passed / total:.1%}")
             print(f"报告：{md_path}")
             print(f"数据：{json_path}")
+
+            # 自动捕获新候选（可 --no-capture 关掉；异常绝不影响评测结果）
+            if capture:
+                await _capture_candidates(meta_session, dw_session, questions_path, output_dir)
             return passed
     finally:
         await _close_clients()
@@ -328,6 +305,30 @@ async def _close_clients():
     await qdrant_client_manager.close()
     await embedding_client_manager.close()
     await es_client_manager.close()
+
+
+async def _capture_candidates(
+    meta_session, dw_session, questions_path: Path, report_dir: Path
+) -> None:
+    """评测后自动捞新候选，跑一遍 AI 审核出候选报告（不自动晋升）。
+
+    复用 sync_eval_questions.run 的 sessions 参数注入既有会话，避免重复
+    init/close 客户端；任何异常只打警告，绝不回吐错误影响评测结果。
+    """
+    try:
+        from app.scripts import sync_eval_questions
+
+        print("\n[capture] 评测完成，自动捕获新候选...")
+        await sync_eval_questions.run(
+            questions_path=questions_path,
+            report_dir=report_dir,
+            verify=True,
+            review=True,
+            apply=False,
+            sessions=(meta_session, dw_session),
+        )
+    except Exception as e:  # noqa: BLE001
+        print(f"[capture] 候选捕获失败（不影响评测结果）：{e}")
 
 
 if __name__ == "__main__":
@@ -346,6 +347,21 @@ if __name__ == "__main__":
     parser.add_argument(
         "--timeout", type=int, default=300, help="单题链路执行超时（秒），默认 300"
     )
+    parser.add_argument(
+        "--no-capture",
+        action="store_false",
+        dest="capture",
+        help="评测后不自动捕获新候选（默认自动，只出候选报告不晋升）",
+    )
     args = parser.parse_args()
 
-    asyncio.run(run(args.questions, args.output, args.category, args.limit, args.timeout))
+    asyncio.run(
+        run(
+            args.questions,
+            args.output,
+            args.category,
+            args.limit,
+            args.timeout,
+            capture=args.capture,
+        )
+    )

@@ -1,0 +1,79 @@
+[
+  {
+    "question": "统计下2025年每月的订单数量",
+    "key": "统计下2025年每月的订单数量",
+    "asked_at": "2026-07-30 07:42:15",
+    "candidate_sql": "SELECT DATE_FORMAT(STR_TO_DATE(CAST(date_id AS CHAR), '%Y%m%d'), '%Y-%m') AS 月份, COUNT(order_id) AS 订单数量 FROM fact_order WHERE date_id >= 20250101 AND date_id <= 20251231 GROUP BY DATE_FORMAT(STR_TO_DATE(CAST(date_id AS CHAR), '%Y%m%d'), '%Y-%m') ORDER BY 月份",
+    "verdict": "defer",
+    "reason": "命中按月分组标签格式漂移盲区，候选使用%Y-%m格式，严格结果集对比易误判，建议暂缓。",
+    "similar_ids": [],
+    "suggested_expected_sql": null,
+    "hard_verified": false,
+    "expected_rows": null,
+    "actual_rows": null,
+    "exec_ok": true,
+    "first_row": {
+      "月份": "2025-01",
+      "订单数量": 40
+    },
+    "error": null
+  },
+  {
+    "question": "统计华北地区销售额",
+    "key": "统计华北地区销售额",
+    "asked_at": "2026-07-22 14:26:21",
+    "candidate_sql": "SELECT SUM(T1.order_amount) AS 销售额 FROM fact_order AS T1 INNER JOIN dim_region AS T2 ON T1.region_id = T2.region_id WHERE T2.region_name = '华北'",
+    "verdict": "filter",
+    "reason": "与现有题 r13“统计华北地区的销售总额”语义和口径完全重复，属于近重复问题。",
+    "similar_ids": [
+      "r13"
+    ],
+    "suggested_expected_sql": null,
+    "hard_verified": false,
+    "expected_rows": null,
+    "actual_rows": null,
+    "exec_ok": true,
+    "first_row": {
+      "销售额": 1701802.0
+    },
+    "error": null
+  },
+  {
+    "question": "那华北区呢？",
+    "key": "那华北区呢",
+    "asked_at": "2026-08-06 09:17:52",
+    "candidate_sql": "SELECT SUM(f.order_quantity) AS 销量 FROM fact_order f JOIN dim_region r ON f.region_id = r.region_id WHERE f.date_id BETWEEN 20240601 AND 20240630 AND r.region_name = '华北'",
+    "verdict": "defer",
+    "reason": "问题为多轮指代，缺少上下文（如时间、指标），命中已知盲区，需人工确认。",
+    "similar_ids": [],
+    "suggested_expected_sql": null,
+    "hard_verified": false,
+    "expected_rows": null,
+    "actual_rows": null,
+    "exec_ok": true,
+    "first_row": {
+      "销量": 124.0
+    },
+    "error": null
+  },
+  {
+    "question": "查2024年6月华东区销量",
+    "key": "查2024年6月华东区销量",
+    "asked_at": "2026-08-06 09:53:37",
+    "candidate_sql": "SELECT SUM(fact_order.order_quantity) AS 销量 FROM fact_order JOIN dim_region ON fact_order.region_id = dim_region.region_id WHERE fact_order.date_id >= 20240601 AND fact_order.date_id <= 20240630 AND dim_region.region_name = '华东'",
+    "verdict": "filter",
+    "reason": "与现有评测集中的 r16 问题完全重复，属于近重复样本，建议过滤。",
+    "similar_ids": [
+      "r16"
+    ],
+    "suggested_expected_sql": null,
+    "hard_verified": false,
+    "expected_rows": null,
+    "actual_rows": null,
+    "exec_ok": true,
+    "first_row": {
+      "销量": 271.0
+    },
+    "error": null
+  }
+]

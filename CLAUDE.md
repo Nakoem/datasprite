@@ -30,6 +30,11 @@ uv run python -m app.agent.graph
 
 # 问数评测（问题集在 evaluations/questions.yaml，报告落 docs/evaluations/）
 uv run python app/scripts/run_evaluation.py
+#   默认评测完自动捕获新候选；--no-capture 可关（只出候选报告，不晋升）
+
+# 评测样本捕获闭环：真实问数沉淀成候选 → AI 审核 → 一键晋升
+uv run python app/scripts/sync_eval_questions.py --review   # 捕获 + LLM 审核建议（promote/filter/defer + 独立SQL硬验证）
+uv run python app/scripts/sync_eval_questions.py --apply    # 一键晋升：AI promote 且硬验证通过 → 写入评测集（git diff 可回退）
 
 # 前端（frontend/，React 19 + Vite）
 cd frontend && pnpm install
