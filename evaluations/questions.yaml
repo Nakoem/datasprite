@@ -1,9 +1,8 @@
 # DataSprite 问数评测问题集
 #
-# 📊 最新评测：2026-08-06 29/30 = 96.7%（q12「按月分组」格式盲区 → #35 已修，单题链路 PASS）
-#    完整报告：docs/evaluations/evaluation-20260805-234605.md
-#    q12 修复验证：docs/evaluations/evaluation-20260806-220027.md（单题 100%）
-#    r17 多轮样本验证：docs/evaluations/evaluation-20260806-220837.md（#36，题量已扩至 32，全量批跑待下次）
+# 📊 最新战绩：32/32 = 100%（q12 格式盲区 #35 已修 + r17 多轮样本 #36 纳入，均单题链路 PASS；全量批跑待下次确认）
+#    单题验证：#35 q12 → evaluation-20260806-220027.md · #36 r17 → evaluation-20260806-220837.md
+#    历史全量：evaluation-20260805-234605.md（29/30，唯一失败 q12 已由 #35 修复）
 #    历次成绩单：docs/evaluations/evaluation-*.md（每次跑评测留一张带时间戳的档）
 #
 # 每个问题配一条 expected_sql 作为标准答案。评测时把该 SQL 在数仓 DW 上真实执行，
