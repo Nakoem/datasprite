@@ -44,7 +44,9 @@ class MySQLClientManager:
             self._get_url(),
             pool_size=10,
             max_overflow=20,
-            pool_recycle=3600,
+            # 3600 → 600：减少长连接被 MySQL 端回收后仍被复用的概率，
+            # 配合 pool_pre_ping 双保险（本次落库 bug 与连接池污染相关）
+            pool_recycle=600,
             pool_timeout=30,
             pool_pre_ping=True,
         )

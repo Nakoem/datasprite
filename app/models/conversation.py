@@ -31,6 +31,12 @@ class ConversationMySQL(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, default=func.now(), onupdate=func.now(), comment="最后更新时间"
     )
+    source: Mapped[str] = mapped_column(
+        String(16),
+        nullable=False,
+        default="web",
+        comment="会话来源：web=DataSprite前端 / external=外部系统透传",
+    )
 
 
 class MessageMySQL(Base):

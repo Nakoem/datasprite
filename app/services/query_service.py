@@ -57,24 +57,40 @@ class QueryService:
         # LangGraph 编译图（可选带 checkpointer）
         self.compiled_graph = compiled_graph or graph
 
-    async def _run_graph(self, query: str, conversation_id: str | None = None):
+    async def _run_graph(
+        self, query: str, conversation_id: str | None = None, source: str = "web"
+    ):
         """内部共享方法：执行 LangGraph 管线，逐段 yield 原始 dict chunk。
 
         query() 将其包装为 SSE，query_sync() 直接收集为 dict。
         避免 SSE 序列化/反序列化来回折腾。
+
+        source 标记会话来源：web=DataSprite 前端（query），external=外部系统透传（query_sync）。
         """
         if not conversation_id:
             conversation_id = str(uuid.uuid4())
 
-        await self.conversation_service.ensure_conversation(conversation_id, query)
+        await self.conversation_service.ensure_conversation(
+            conversation_id, query, source
+        )
 
         conversation_history = await self.conversation_service.get_history_for_llm(
             conversation_id
         )
 
-        await self.conversation_service.save_message(
-            Message(conversation_id=conversation_id, role="user", content=query)
-        )
+        try:
+            await self.conversation_service.save_message(
+                Message(conversation_id=conversation_id, role="user", content=query),
+                source,
+            )
+        except Exception:
+            # fail loud：用户消息保存失败不能静默吞掉（否则数据静默丢失无日志），
+            # 但要保证查询结果仍能正常返回给用户
+            logger.exception(
+                "保存用户消息失败 | conversation_id={} | query={}",
+                conversation_id,
+                query[:200],
+            )
 
         state = DataAgentState(
             query=query,
@@ -147,10 +163,15 @@ class QueryService:
                         summary=collected_summary,
                         metric_definitions=collected_metric_definitions,
                         column_sources=collected_column_sources,
-                    )
+                    ),
+                    source,
                 )
             except Exception:
-                logger.exception("保存助手消息失败 | conversation_id=%s", conversation_id)
+                # loguru 占位符用 {} 不是 %s（%s 打不出参数，日志会静默丢信息）
+                logger.exception(
+                    "保存助手消息失败 | conversation_id={}",
+                    conversation_id,
+                )
 
     async def query_sync(self, query: str, conversation_id: str | None = None) -> dict:
         """同步版问数：直接消费 _run_graph 的 dict chunk，一次性返回。
@@ -175,7 +196,7 @@ class QueryService:
 
         async def _collect():
             async for chunk in self._run_graph(
-                query, conversation_id=conversation_id
+                query, conversation_id=conversation_id, source="external"
             ):
                 if not isinstance(chunk, dict):
                     continue

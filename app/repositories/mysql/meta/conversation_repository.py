@@ -67,9 +67,11 @@ class ConversationRepository:
 
     # ── 会话 ──
 
-    async def create_conversation(self, conversation_id: str, title: str) -> None:
+    async def create_conversation(
+        self, conversation_id: str, title: str, source: str = "web"
+    ) -> None:
         """创建新会话记录"""
-        model = ConversationMySQL(id=conversation_id, title=title)
+        model = ConversationMySQL(id=conversation_id, title=title, source=source)
         self.session.add(model)
         await self.session.commit()
 
@@ -80,15 +82,20 @@ class ConversationRepository:
             conv.title = title
             await self.session.commit()
 
-    async def list_conversations(self) -> list[Conversation]:
-        """列出所有会话，按更新时间倒序"""
+    async def list_conversations(self, source: str = "web") -> list[Conversation]:
+        """列出指定来源的会话，按更新时间倒序
+
+        默认只列前端 web 会话；外部系统（Dify）透传的会话标 external，
+        不进前端列表，避免污染前端历史。
+        """
         sql = """
             SELECT c.id, c.title, c.created_at, c.updated_at,
                    (SELECT COUNT(*) FROM messages m WHERE m.conversation_id = c.id) AS message_count
             FROM conversations c
+            WHERE c.source = :source
             ORDER BY c.updated_at DESC
         """
-        result = await self.session.execute(text(sql))
+        result = await self.session.execute(text(sql), {"source": source})
         rows = result.mappings().fetchall()
         return [
             Conversation(
@@ -121,8 +128,25 @@ class ConversationRepository:
 
     # ── 消息 ──
 
-    async def add_message(self, message: Message) -> None:
-        """插入一条消息"""
+    async def add_message(self, message: Message, source: str = "web") -> None:
+        """插入一条消息
+
+        source 仅在会话缺失需要兜底补建时使用（正常路径 ensure_conversation 已建好）。
+        """
+        # 兜底建会话：会话不存在时自动补建（INSERT IGNORE 只在缺失时生效），
+        # 避免 ensure_conversation 因连接异常静默失败后，
+        # 消息插入触发外键约束（messages_ibfk_1）导致整条消息全丢
+        await self.session.execute(
+            text(
+                "INSERT IGNORE INTO conversations (id, title, source) "
+                "VALUES (:cid, :title, :source)"
+            ),
+            {
+                "cid": message.conversation_id,
+                "title": (message.content or "")[:30] or "恢复会话",
+                "source": source,
+            },
+        )
         model = MessageMySQL(
             conversation_id=message.conversation_id,
             role=message.role,

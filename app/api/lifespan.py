@@ -46,7 +46,9 @@ async def lifespan(app: FastAPI):
                     id VARCHAR(36) PRIMARY KEY COMMENT '会话 UUID',
                     title VARCHAR(200) NOT NULL COMMENT '会话标题',
                     created_at DATETIME DEFAULT NOW() COMMENT '创建时间',
-                    updated_at DATETIME DEFAULT NOW() ON UPDATE NOW() COMMENT '最后更新时间'
+                    updated_at DATETIME DEFAULT NOW() ON UPDATE NOW() COMMENT '最后更新时间',
+                    source VARCHAR(16) NOT NULL DEFAULT 'web'
+                        COMMENT '会话来源：web=DataSprite前端 / external=外部系统透传'
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
                 """
             )
@@ -97,6 +99,46 @@ async def lifespan(app: FastAPI):
                     "COMMENT '本次查询涉及的数据来源引用 — 表名+字段详情'"
                 )
             )
+
+        # 兼容已有数据库：conversations.source 列（区分前端 web 会话与外部透传会话）。
+        # 与 column_sources 同样的 information_schema 判断，避免每次启动重复 ALTER
+        try:
+            result = await session.execute(
+                text(
+                    """
+                    SELECT COUNT(*) FROM information_schema.columns
+                    WHERE table_schema = DATABASE()
+                      AND table_name = 'conversations'
+                      AND column_name = 'source'
+                    """
+                )
+            )
+            source_exists = (result.scalar() or 0) > 0
+        except Exception:
+            # 权限/版本差异时保守跳过 ALTER，宁可少补一列也不能让启动崩掉
+            logger.exception("检查 conversations.source 列存在性失败，跳过 ALTER")
+            source_exists = True
+        if not source_exists:
+            await session.execute(
+                text(
+                    "ALTER TABLE conversations ADD COLUMN source VARCHAR(16) "
+                    "NOT NULL DEFAULT 'web' "
+                    "COMMENT '会话来源：web=DataSprite前端 / external=外部系统透传'"
+                )
+            )
+
+        # 存量数据迁移：历史已知的 Dify 透传会话标 external（前端列表隐藏）。
+        # 之后 Dify 新会话经 /api/ask 自动建 external，无需再硬编码。
+        # 两个硬编码 ID 说明：
+        #   d2cd6bc4-e6e8-4c06-b675-12297c94540d = 飞书端问数复用的正式会话
+        #   dify-test-mem-001 = 测 Dify 多轮记忆的临时会话
+        await session.execute(
+            text(
+                "UPDATE conversations SET source='external' WHERE source='web' "
+                "AND id IN "
+                "('d2cd6bc4-e6e8-4c06-b675-12297c94540d', 'dify-test-mem-001')"
+            )
+        )
 
         # 用户表：登录鉴权用，首次启动时创建
         await session.execute(

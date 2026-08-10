@@ -32,16 +32,18 @@ class ConversationService:
 
     # ── 会话管理 ──
 
-    async def ensure_conversation(self, conversation_id: str, first_query: str) -> None:
+    async def ensure_conversation(
+        self, conversation_id: str, first_query: str, source: str = "web"
+    ) -> None:
         """如果会话不存在则创建，存在则更新标题（首条 query 才设标题）"""
         existing = await self.repo.get_conversation(conversation_id)
         if existing is None:
             title = first_query[:30] + ("…" if len(first_query) > 30 else "")
-            await self.repo.create_conversation(conversation_id, title)
+            await self.repo.create_conversation(conversation_id, title, source)
 
-    async def list_conversations(self) -> list[Conversation]:
-        """获取所有会话列表"""
-        return await self.repo.list_conversations()
+    async def list_conversations(self, source: str = "web") -> list[Conversation]:
+        """获取指定来源的会话列表（默认前端 web 会话）"""
+        return await self.repo.list_conversations(source)
 
     async def get_conversation_detail(
         self, conversation_id: str
@@ -59,9 +61,9 @@ class ConversationService:
 
     # ── 消息管理 ──
 
-    async def save_message(self, message: Message) -> None:
-        """保存一条消息"""
-        await self.repo.add_message(message)
+    async def save_message(self, message: Message, source: str = "web") -> None:
+        """保存一条消息（source 用于兜底补建会话时标记来源）"""
+        await self.repo.add_message(message, source)
 
     async def get_history_for_llm(self, conversation_id: str) -> str:
         """将最近对话格式化为 LLM prompt 中可用的文本"""
