@@ -66,8 +66,9 @@ app.include_router(
 app.include_router(audit_router, dependencies=[Depends(get_current_user)])
 
 # ── API 限流（双层令牌桶，实现见 app/core/rate_limiter.py）──────────
-# 最先注册 = 位于中间件栈最内层：429 会被外层的 Prometheus/OTel 统计到，
-# 攻击流量在监控里可见；同时仍在路由处理前拦截，LLM 链路不受冲击
+# 最先注册 = 位于中间件栈最内层（后面注册的 add_request_id 等在其外层）：
+# 429 会被外层的 Prometheus/OTel 统计到，攻击流量在监控里可见；
+# 同时仍在路由处理前拦截，LLM 链路不受冲击
 app.middleware("http")(rate_limit_middleware)
 
 # ── Prometheus 指标暴露 /metrics ────────────────────────────────────
@@ -85,7 +86,9 @@ async def health():
 
 @app.middleware("http")
 async def add_request_id(request: Request, call_next):
-    request_id = uuid.uuid4()
+    # 优先沿用上游透传的 request_id（feishu-bridge 带 X-Request-Id 头），
+    # 实现 feishu-bridge → DataSprite 全链路贯通；上游没传才自建 UUID
+    request_id = request.headers.get("X-Request-Id") or str(uuid.uuid4())
     request_id_ctx_var.set(request_id)
     response = await call_next(request)
     return response
