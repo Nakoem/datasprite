@@ -5,7 +5,7 @@
 
 // ── SSE 事件 ──
 
-export type ProgressStatus = "running" | "success" | "error";
+export type ProgressStatus = "running" | "success" | "error" | "retry";
 
 export type ProgressEvent = {
   type: "progress";

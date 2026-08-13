@@ -207,7 +207,12 @@ export default function App() {
           if (event.type === "progress") {
             return {
               ...message,
-              content: event.status === "running" ? `正在执行：${event.step}` : message.content,
+              content:
+                event.status === "running"
+                  ? `正在执行：${event.step}`
+                  : event.status === "retry"
+                    ? `正在${event.step}（重试中）`
+                    : message.content,
               steps: upsertStep(message.steps, event),
             };
           }

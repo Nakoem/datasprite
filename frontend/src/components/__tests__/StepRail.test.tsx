@@ -28,13 +28,13 @@ describe("StepRail", () => {
     expect(container.innerHTML).toBe("");
   });
 
-  it("渲染所有 16 个流程节点", () => {
+  it("渲染所有 17 个流程节点", () => {
     render(<StepRail steps={ALL_STEPS} />);
 
     const nodeNames = [
       "分析意图", "澄清追问", "抽取关键词", "召回字段信息",
       "召回指标信息", "召回字段取值", "合并召回信息", "过滤指标信息",
-      "过滤表信息", "增加额外上下文", "生成SQL", "校验SQL",
+      "过滤表信息", "增加额外上下文", "压缩对话记忆", "生成SQL", "校验SQL",
       "校正SQL", "语义校验", "执行SQL", "生成结果解读",
     ];
 
@@ -58,5 +58,13 @@ describe("StepRail", () => {
     expect(screen.getByText("生成SQL")).toBeInTheDocument();
     // 未传的步骤也渲染（以 pending 状态）
     expect(screen.getByText("校验SQL")).toBeInTheDocument();
+  });
+
+  it("retry 步骤渲染为重试状态（RotateCw 图标）", () => {
+    render(
+      <StepRail steps={[{ step: "语义校验", status: "retry", updatedAt: Date.now() }]} />,
+    );
+    expect(screen.getByText("语义校验")).toBeInTheDocument();
+    expect(document.querySelector(".lucide-rotate-cw")).toBeInTheDocument();
   });
 });
