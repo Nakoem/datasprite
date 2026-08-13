@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>问数精灵 · LangGraph 17 节点工作流</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;   /* white-smoke */
+      --color-ink:     #2d3142;   /* jet-black */
+      --color-muted:   #4f5d75;   /* blue-slate */
+      --color-accent:  #eb6c36;   /* atomic-tangerine */
+      --font-sans:     'Geist', 'Microsoft YaHei', 'PingFang SC', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', 'Noto Serif SC', 'STSong', serif;
+      --font-mono:     'Geist Mono', 'Microsoft YaHei', ui-monospace, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1280px; width: 100%; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    svg { width: 100%; min-width: 900px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">LangGraph Workflow · Diagram Design</p>
+    <h1>问数精灵 · LangGraph 17 节点工作流</h1>
+
+    <!-- 17 节点：意图分类→澄清/抽取→三路召回→合并→两路筛选→上下文→记忆压缩→SQL生成→校验/修正→语义校验→执行→结果解读 -->
+    <svg viewBox="0 0 1280 1160" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="langgraph-workflow-title langgraph-workflow-desc">
+      <title id="langgraph-workflow-title">问数精灵 LangGraph 17 节点 NL2SQL 工作流</title>
+      <desc id="langgraph-workflow-desc">问数精灵的完整 LangGraph 工作流：意图分类与澄清、关键词抽取、Qdrant 字段与指标召回、ES 字段取值召回、信息合并、表与指标筛选、补充上下文、记忆压缩、SQL 生成与校验、语义校验、SQL 执行与结果解读。</desc>
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker>
+        <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker>
+      </defs>
+
+      <rect width="100%" height="100%" fill="#f5f5f5"/>
+
+      <!-- ============ Zone 容器（先画，垫底） ============ -->
+      <rect x="40" y="40" width="1200" height="172" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.12)" stroke-width="0.8" stroke-dasharray="4,4"/>
+      <text x="56" y="56" fill="#4f5d75" font-size="8" font-family="'Geist Mono',monospace" letter-spacing="0.18em">INTENT</text>
+
+      <rect x="40" y="220" width="1200" height="180" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.12)" stroke-width="0.8" stroke-dasharray="4,4"/>
+      <text x="56" y="236" fill="#4f5d75" font-size="8" font-family="'Geist Mono',monospace" letter-spacing="0.18em">RETRIEVAL</text>
+
+      <rect x="40" y="416" width="1200" height="236" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.12)" stroke-width="0.8" stroke-dasharray="4,4"/>
+      <text x="56" y="432" fill="#4f5d75" font-size="8" font-family="'Geist Mono',monospace" letter-spacing="0.18em">FUSION</text>
+
+      <rect x="40" y="668" width="1200" height="428" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.12)" stroke-width="0.8" stroke-dasharray="4,4"/>
+      <text x="56" y="684" fill="#4f5d75" font-size="8" font-family="'Geist Mono',monospace" letter-spacing="0.18em">EXECUTION</text>
+
+      <!-- ============ 箭头（先画，垫底） ============ -->
+      <!-- 分析意图 → 澄清追问（意图模糊，左分支） -->
+      <line x1="640" y1="104" x2="640" y2="124" stroke="#4f5d75" stroke-width="1"/>
+      <line x1="640" y1="124" x2="250" y2="124" stroke="#4f5d75" stroke-width="1"/>
+      <line x1="250" y1="124" x2="250" y2="140" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+
+      <!-- 分析意图 → 抽取关键词（主链） -->
+      <line x1="640" y1="104" x2="640" y2="140" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+
+      <!-- 抽取关键词 → 三路召回（fan-out） -->
+      <line x1="640" y1="192" x2="640" y2="208" stroke="#4f5d75" stroke-width="1"/>
+      <line x1="640" y1="208" x2="280" y2="208" stroke="#4f5d75" stroke-width="1"/>
+      <line x1="280" y1="208" x2="280" y2="228" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+      <line x1="640" y1="192" x2="640" y2="228" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+      <line x1="640" y1="208" x2="1000" y2="208" stroke="#4f5d75" stroke-width="1"/>
+      <line x1="1000" y1="208" x2="1000" y2="228" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+
+      <!-- 三路召回 → 合并（fan-in） -->
+      <line x1="280" y1="280" x2="280" y2="296" stroke="#4f5d75" stroke-width="1"/>
+      <line x1="280" y1="296" x2="640" y2="296" stroke="#4f5d75" stroke-width="1"/>
+      <line x1="640" y1="296" x2="640" y2="316" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+      <line x1="640" y1="280" x2="640" y2="316" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+      <line x1="1000" y1="280" x2="1000" y2="296" stroke="#4f5d75" stroke-width="1"/>
+      <line x1="1000" y1="296" x2="640" y2="296" stroke="#4f5d75" stroke-width="1"/>
+      <line x1="640" y1="296" x2="640" y2="316" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+
+      <!-- 合并 → 两路过滤（fan-out） -->
+      <line x1="640" y1="368" x2="640" y2="384" stroke="#4f5d75" stroke-width="1"/>
+      <line x1="640" y1="384" x2="440" y2="384" stroke="#4f5d75" stroke-width="1"/>
+      <line x1="440" y1="384" x2="440" y2="404" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+      <line x1="640" y1="384" x2="840" y2="384" stroke="#4f5d75" stroke-width="1"/>
+      <line x1="840" y1="384" x2="840" y2="404" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+
+      <!-- 两路过滤 → 额外上下文（fan-in） -->
+      <line x1="440" y1="456" x2="440" y2="472" stroke="#4f5d75" stroke-width="1"/>
+      <line x1="440" y1="472" x2="640" y2="472" stroke="#4f5d75" stroke-width="1"/>
+      <line x1="640" y1="472" x2="640" y2="492" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+      <line x1="840" y1="456" x2="840" y2="472" stroke="#4f5d75" stroke-width="1"/>
+      <line x1="840" y1="472" x2="640" y2="472" stroke="#4f5d75" stroke-width="1"/>
+      <line x1="640" y1="472" x2="640" y2="492" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+
+      <!-- 额外上下文 → 记忆压缩 -->
+      <line x1="640" y1="544" x2="640" y2="580" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+
+      <!-- 记忆压缩 → 生成 SQL -->
+      <line x1="640" y1="632" x2="640" y2="668" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+
+      <!-- 生成 SQL → 校验 SQL -->
+      <line x1="640" y1="720" x2="640" y2="756" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+
+      <!-- 校验 SQL → 语义校验（无误，主链） -->
+      <line x1="640" y1="808" x2="640" y2="844" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+
+      <!-- 校验 SQL → 校正 SQL（有误，横线） -->
+      <line x1="720" y1="784" x2="916" y2="784" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+
+      <!-- 校正 SQL → 语义校验（回主链） -->
+      <line x1="1000" y1="808" x2="1000" y2="828" stroke="#4f5d75" stroke-width="1"/>
+      <line x1="1000" y1="828" x2="640" y2="828" stroke="#4f5d75" stroke-width="1"/>
+      <line x1="640" y1="828" x2="640" y2="844" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+
+      <!-- 语义校验 → 校正 SQL（校验失败，右出直上） -->
+      <line x1="720" y1="872" x2="1000" y2="872" stroke="#4f5d75" stroke-width="1"/>
+      <line x1="1000" y1="872" x2="1000" y2="788" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+
+      <!-- 语义校验 → 执行 SQL（校验通过，主链） -->
+      <line x1="640" y1="896" x2="640" y2="932" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+
+      <!-- 执行 SQL → 生成结果解读 -->
+      <line x1="640" y1="984" x2="640" y2="1020" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+
+      <!-- ============ 分支标签（带 mask） ============ -->
+      <rect x="440" y="104" width="56" height="16" rx="2" fill="#f5f5f5"/>
+      <text x="468" y="116" fill="#4f5d75" font-size="11" font-family="'Geist','Microsoft YaHei',sans-serif" text-anchor="middle">意图模糊</text>
+
+      <rect x="792" y="766" width="40" height="16" rx="2" fill="#f5f5f5"/>
+      <text x="812" y="778" fill="#4f5d75" font-size="11" font-family="'Geist','Microsoft YaHei',sans-serif" text-anchor="middle">有误</text>
+
+      <rect x="660" y="806" width="40" height="16" rx="2" fill="#f5f5f5"/>
+      <text x="680" y="818" fill="#4f5d75" font-size="11" font-family="'Geist','Microsoft YaHei',sans-serif" text-anchor="middle">无误</text>
+
+      <rect x="840" y="852" width="64" height="16" rx="2" fill="#f5f5f5"/>
+      <text x="872" y="864" fill="#4f5d75" font-size="11" font-family="'Geist','Microsoft YaHei',sans-serif" text-anchor="middle">校验失败</text>
+
+      <rect x="660" y="900" width="64" height="16" rx="2" fill="#f5f5f5"/>
+      <text x="692" y="912" fill="#4f5d75" font-size="11" font-family="'Geist','Microsoft YaHei',sans-serif" text-anchor="middle">校验通过</text>
+
+      <!-- ============ 节点（后画，压线） ============ -->
+      <!-- Zone A：意图解析 -->
+      <rect x="560" y="56" width="160" height="48" rx="6" fill="#f5f5f5"/>
+      <rect x="560" y="56" width="160" height="48" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <text x="640" y="77" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist','Microsoft YaHei',sans-serif" text-anchor="middle">分析意图</text>
+      <text x="640" y="93" fill="#4f5d75" font-size="9" font-family="'Geist Mono',monospace" text-anchor="middle">classify_intent</text>
+
+      <rect x="170" y="144" width="160" height="48" rx="6" fill="#f5f5f5"/>
+      <rect x="170" y="144" width="160" height="48" rx="6" fill="#ffffff" stroke="#7a8399" stroke-width="1"/>
+      <text x="250" y="165" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist','Microsoft YaHei',sans-serif" text-anchor="middle">澄清追问</text>
+      <text x="250" y="181" fill="#4f5d75" font-size="9" font-family="'Geist Mono',monospace" text-anchor="middle">ask_clarification · END</text>
+
+      <rect x="560" y="144" width="160" height="48" rx="6" fill="#f5f5f5"/>
+      <rect x="560" y="144" width="160" height="48" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <text x="640" y="165" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist','Microsoft YaHei',sans-serif" text-anchor="middle">抽取关键词</text>
+      <text x="640" y="181" fill="#4f5d75" font-size="9" font-family="'Geist Mono',monospace" text-anchor="middle">extract_keywords</text>
+
+      <!-- Zone B：检索召回 -->
+      <rect x="200" y="232" width="160" height="48" rx="6" fill="#f5f5f5"/>
+      <rect x="200" y="232" width="160" height="48" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <text x="280" y="253" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist','Microsoft YaHei',sans-serif" text-anchor="middle">召回字段信息</text>
+      <text x="280" y="269" fill="#4f5d75" font-size="9" font-family="'Geist Mono',monospace" text-anchor="middle">recall_column · Qdrant</text>
+
+      <rect x="560" y="232" width="160" height="48" rx="6" fill="#f5f5f5"/>
+      <rect x="560" y="232" width="160" height="48" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <text x="640" y="253" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist','Microsoft YaHei',sans-serif" text-anchor="middle">召回指标信息</text>
+      <text x="640" y="269" fill="#4f5d75" font-size="9" font-family="'Geist Mono',monospace" text-anchor="middle">recall_metric · Qdrant</text>
+
+      <rect x="920" y="232" width="160" height="48" rx="6" fill="#f5f5f5"/>
+      <rect x="920" y="232" width="160" height="48" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <text x="1000" y="253" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist','Microsoft YaHei',sans-serif" text-anchor="middle">召回字段取值</text>
+      <text x="1000" y="269" fill="#4f5d75" font-size="9" font-family="'Geist Mono',monospace" text-anchor="middle">recall_value · ES</text>
+
+      <rect x="560" y="320" width="160" height="48" rx="6" fill="#f5f5f5"/>
+      <rect x="560" y="320" width="160" height="48" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <text x="640" y="341" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist','Microsoft YaHei',sans-serif" text-anchor="middle">合并召回信息</text>
+      <text x="640" y="357" fill="#4f5d75" font-size="9" font-family="'Geist Mono',monospace" text-anchor="middle">merge_retrieved_info</text>
+
+      <!-- Zone C：融合生成 -->
+      <rect x="360" y="408" width="160" height="48" rx="6" fill="#f5f5f5"/>
+      <rect x="360" y="408" width="160" height="48" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <text x="440" y="429" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist','Microsoft YaHei',sans-serif" text-anchor="middle">过滤指标信息</text>
+      <text x="440" y="445" fill="#4f5d75" font-size="9" font-family="'Geist Mono',monospace" text-anchor="middle">filter_metric · LLM</text>
+
+      <rect x="760" y="408" width="160" height="48" rx="6" fill="#f5f5f5"/>
+      <rect x="760" y="408" width="160" height="48" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <text x="840" y="429" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist','Microsoft YaHei',sans-serif" text-anchor="middle">过滤表信息</text>
+      <text x="840" y="445" fill="#4f5d75" font-size="9" font-family="'Geist Mono',monospace" text-anchor="middle">filter_table · LLM</text>
+
+      <rect x="552" y="496" width="176" height="48" rx="6" fill="#f5f5f5"/>
+      <rect x="552" y="496" width="176" height="48" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <text x="640" y="517" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist','Microsoft YaHei',sans-serif" text-anchor="middle">增加额外上下文</text>
+      <text x="640" y="533" fill="#4f5d75" font-size="9" font-family="'Geist Mono',monospace" text-anchor="middle">add_extra_context</text>
+
+      <rect x="560" y="584" width="160" height="48" rx="6" fill="#f5f5f5"/>
+      <rect x="560" y="584" width="160" height="48" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1" stroke-dasharray="4,3"/>
+      <text x="640" y="605" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist','Microsoft YaHei',sans-serif" text-anchor="middle">压缩对话记忆</text>
+      <text x="640" y="621" fill="#4f5d75" font-size="9" font-family="'Geist Mono',monospace" text-anchor="middle">dream · 超阈值触发</text>
+
+      <!-- Zone D：生成执行 -->
+      <rect x="560" y="672" width="160" height="48" rx="6" fill="#f5f5f5"/>
+      <rect x="560" y="672" width="160" height="48" rx="6" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1.2"/>
+      <text x="640" y="693" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist','Microsoft YaHei',sans-serif" text-anchor="middle">生成 SQL</text>
+      <text x="640" y="709" fill="#4f5d75" font-size="9" font-family="'Geist Mono',monospace" text-anchor="middle">generate_sql</text>
+
+      <rect x="560" y="760" width="160" height="48" rx="6" fill="#f5f5f5"/>
+      <rect x="560" y="760" width="160" height="48" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <text x="640" y="781" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist','Microsoft YaHei',sans-serif" text-anchor="middle">校验 SQL</text>
+      <text x="640" y="797" fill="#4f5d75" font-size="9" font-family="'Geist Mono',monospace" text-anchor="middle">validate_sql · EXPLAIN</text>
+
+      <rect x="920" y="760" width="160" height="48" rx="6" fill="#f5f5f5"/>
+      <rect x="920" y="760" width="160" height="48" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <text x="1000" y="781" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist','Microsoft YaHei',sans-serif" text-anchor="middle">校正 SQL</text>
+      <text x="1000" y="797" fill="#4f5d75" font-size="9" font-family="'Geist Mono',monospace" text-anchor="middle">correct_sql · ≤3 次</text>
+
+      <rect x="560" y="848" width="160" height="48" rx="6" fill="#f5f5f5"/>
+      <rect x="560" y="848" width="160" height="48" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <text x="640" y="869" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist','Microsoft YaHei',sans-serif" text-anchor="middle">语义校验</text>
+      <text x="640" y="885" fill="#4f5d75" font-size="9" font-family="'Geist Mono',monospace" text-anchor="middle">semantic_validate</text>
+
+      <rect x="560" y="936" width="160" height="48" rx="6" fill="#f5f5f5"/>
+      <rect x="560" y="936" width="160" height="48" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <text x="640" y="957" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist','Microsoft YaHei',sans-serif" text-anchor="middle">执行 SQL</text>
+      <text x="640" y="973" fill="#4f5d75" font-size="9" font-family="'Geist Mono',monospace" text-anchor="middle">run_sql · MySQL</text>
+
+      <rect x="560" y="1024" width="160" height="48" rx="6" fill="#f5f5f5"/>
+      <rect x="560" y="1024" width="160" height="48" rx="6" fill="rgba(46,90,168,0.06)" stroke="#2e5aa8" stroke-width="1"/>
+      <text x="640" y="1045" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist','Microsoft YaHei',sans-serif" text-anchor="middle">生成结果解读</text>
+      <text x="640" y="1061" fill="#4f5d75" font-size="9" font-family="'Geist Mono',monospace" text-anchor="middle">summarize_result · END</text>
+
+      <!-- ============ Legend（底部横条） ============ -->
+      <line x1="40" y1="1116" x2="1240" y2="1116" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+      <text x="40" y="1132" fill="#4f5d75" font-size="8" font-family="'Geist Mono',monospace" letter-spacing="0.14em">LEGEND</text>
+
+      <rect x="120" y="1124" width="16" height="12" rx="3" fill="#ffffff" stroke="#2d3142" stroke-width="0.8"/>
+      <text x="142" y="1133" fill="#4f5d75" font-size="9" font-family="'Geist','Microsoft YaHei',sans-serif">工作流节点</text>
+
+      <rect x="264" y="1124" width="16" height="12" rx="3" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1.2"/>
+      <text x="286" y="1133" fill="#4f5d75" font-size="9" font-family="'Geist','Microsoft YaHei',sans-serif">核心节点</text>
+
+      <rect x="392" y="1124" width="16" height="12" rx="3" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8" stroke-dasharray="3,2"/>
+      <text x="414" y="1133" fill="#4f5d75" font-size="9" font-family="'Geist','Microsoft YaHei',sans-serif">条件触发</text>
+
+      <rect x="532" y="1124" width="16" height="12" rx="3" fill="rgba(46,90,168,0.06)" stroke="#2e5aa8" stroke-width="1"/>
+      <text x="554" y="1133" fill="#4f5d75" font-size="9" font-family="'Geist','Microsoft YaHei',sans-serif">终止节点</text>
+
+      <line x1="676" y1="1130" x2="708" y2="1130" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+      <text x="716" y="1133" fill="#4f5d75" font-size="9" font-family="'Geist','Microsoft YaHei',sans-serif">主流程</text>
+
+      <line x1="808" y1="1130" x2="840" y2="1130" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+      <text x="848" y="1133" fill="#4f5d75" font-size="9" font-family="'Geist','Microsoft YaHei',sans-serif">校验失败 / 修正</text>
+    </svg>
+  </div>
+</body>
+</html>

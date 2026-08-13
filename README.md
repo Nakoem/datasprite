@@ -33,35 +33,9 @@ DataSprite 是一个基于 NL2SQL 的智能问数系统。用户用自然语言�
 
 ## 🏗️ 架构总览
 
-```
-用户提问："华北地区上季度GMV"
-        │
-        ▼
-┌─────────────────────────────────────┐
-│           LangGraph 工作流            │
-│                                      │
-│  extract_keywords（关键词抽取）        │
-│       │                              │
-│       ├── recall_column（Qdrant）     │
-│       ├── recall_metric（Qdrant）     │
-│       └── recall_value （ES）         │
-│       │                              │
-│       ▼                              │
-│  merge_retrieved_info（合并补全）      │
-│       │                              │
-│       ├── filter_table（LLM筛选）      │
-│       └── filter_metric（LLM筛选）     │
-│       │                              │
-│       ▼                              │
-│  add_extra_context  →  generate_sql  │
-│       │                              │
-│       ▼                              │
-│  validate_sql  →  correct_sql        │
-│       │                              │
-│       ▼                              │
-│  run_sql  →  SSE 流式返回前端         │
-└─────────────────────────────────────┘
-```
+![问数精灵 LangGraph 17 节点工作流](langgraph-workflow.png)
+
+> 完整交互版（矢量，可浏览器缩放）：[langgraph-workflow.html](langgraph-workflow.html)
 
 ---
 
@@ -74,7 +48,7 @@ DataSprite 是一个基于 NL2SQL 的智能问数系统。用户用自然语言�
 | 🔍 向量检索 | Qdrant（HNSW 索引） |
 | 📄 全文检索 | Elasticsearch（IK 中文分词） |
 | 🗄️ 数据库 | MySQL 8.0（星型模型：1事实表 + 4维度表） |
-| 🔗 工作流 | LangGraph（12节点编排） |
+| 🔗 工作流 | LangGraph（17节点编排） |
 | 🌐 后端 | FastAPI + SSE 流式推送 |
 | 🎨 前端 | React 19 + TypeScript + Tailwind CSS |
 | 🐳 部署 | Docker Compose |
