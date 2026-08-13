@@ -28,7 +28,9 @@ class UserRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def create_user(self, username: str, password_hash: str, email: str | None = None) -> User:
+    async def create_user(
+        self, username: str, password_hash: str, email: str | None = None
+    ) -> User:
         """创建新用户"""
         sql = """
             INSERT INTO users (username, password_hash, email)

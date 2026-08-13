@@ -168,7 +168,7 @@ async def get_current_user(
 
     try:
         user_id = int(payload.get("sub", 0))
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         raise HTTPException(status_code=401, detail="token 无效或已过期")
 
     user = await user_repository.get_by_id(user_id)

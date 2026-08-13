@@ -126,26 +126,24 @@ class AuditService:
         exec_ms: int | None = None
         if first.timestamp and last.timestamp:
             try:
-                t1 = datetime.fromisoformat(
-                    first.timestamp.replace("Z", "+00:00")
-                )
-                t2 = datetime.fromisoformat(
-                    last.timestamp.replace("Z", "+00:00")
-                )
+                t1 = datetime.fromisoformat(first.timestamp.replace("Z", "+00:00"))
+                t2 = datetime.fromisoformat(last.timestamp.replace("Z", "+00:00"))
                 exec_ms = int((t2 - t1).total_seconds() * 1000)
-            except (ValueError, OSError):
+            except ValueError, OSError:
                 pass
 
         steps = []
         for cp in checkpoints:
             # 用 updated_channels 生成可读步骤名（比 pending_writes 的 UUID 有意义）
             name = _step_label(cp)
-            steps.append({
-                "step_name": name,
-                "step_order": cp.step_number,
-                "status": "success",
-                "timestamp": cp.timestamp,
-            })
+            steps.append(
+                {
+                    "step_name": name,
+                    "step_order": cp.step_number,
+                    "status": "success",
+                    "timestamp": cp.timestamp,
+                }
+            )
 
         return AuditEntry(
             question=question,
@@ -213,11 +211,13 @@ class AuditService:
 
         pending_writes = []
         for tid, ch, val in t.pending_writes or []:
-            pending_writes.append({
-                "task_id": tid,
-                "channel": ch,
-                "value": _sanitize(val),
-            })
+            pending_writes.append(
+                {
+                    "task_id": tid,
+                    "channel": ch,
+                    "value": _sanitize(val),
+                }
+            )
 
         return {
             "checkpoint_id": cp["id"],
@@ -239,19 +239,19 @@ class AuditService:
         base_state = base.checkpoint.get("channel_values", {})
         target_state = target.checkpoint.get("channel_values", {})
 
-        all_keys = sorted(
-            set(base_state.keys()) | set(target_state.keys())
-        )
+        all_keys = sorted(set(base_state.keys()) | set(target_state.keys()))
         diffs = []
         for key in all_keys:
             before = _sanitize(base_state.get(key))
             after = _sanitize(target_state.get(key))
-            diffs.append({
-                "field": key,
-                "before": before,
-                "after": after,
-                "changed": before != after,
-            })
+            diffs.append(
+                {
+                    "field": key,
+                    "before": before,
+                    "after": after,
+                    "changed": before != after,
+                }
+            )
 
         return {
             "base_checkpoint_id": base_id,

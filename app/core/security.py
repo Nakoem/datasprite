@@ -28,7 +28,7 @@ def verify_password(password: str, password_hash: str) -> bool:
     try:
         pw_bytes = password.encode("utf-8")[:72]
         return bcrypt.checkpw(pw_bytes, password_hash.encode("utf-8"))
-    except (ValueError, TypeError):
+    except ValueError, TypeError:
         # 库里存的不是合法 bcrypt 哈希（如手工写入的坏数据），按不匹配处理
         return False
 

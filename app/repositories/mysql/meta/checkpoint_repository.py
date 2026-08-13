@@ -70,9 +70,7 @@ class CheckpointRepository:
         # 可用于推断是哪个节点执行了（比 pending_writes 的 task_id UUID 更有意义）
         updated_channels: list[str] = list(cp.get("updated_channels") or [])
         # pending_writes 的 channel 名作为后备（updated_channels 为空时用）
-        pending_channels: list[str] = list({
-            pw[1] for pw in (t.pending_writes or [])
-        })
+        pending_channels: list[str] = list({pw[1] for pw in (t.pending_writes or [])})
 
         return CheckpointInfo(
             checkpoint_id=cp["id"],

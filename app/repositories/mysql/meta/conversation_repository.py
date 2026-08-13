@@ -38,7 +38,7 @@ def _parse_json(value: str | dict | list | None) -> dict | list | None:
     if isinstance(value, str):
         try:
             return json.loads(value)
-        except (json.JSONDecodeError, TypeError):
+        except json.JSONDecodeError, TypeError:
             return None
     return value
 
@@ -152,10 +152,20 @@ class ConversationRepository:
             role=message.role,
             content=message.content,
             sql=message.sql,
-            result=json.dumps(_to_json_safe(message.result), ensure_ascii=False) if message.result is not None else None,
+            result=json.dumps(_to_json_safe(message.result), ensure_ascii=False)
+            if message.result is not None
+            else None,
             summary=message.summary,
-            metric_definitions=json.dumps(_to_json_safe(message.metric_definitions), ensure_ascii=False) if message.metric_definitions is not None else None,
-            column_sources=json.dumps(_to_json_safe(message.column_sources), ensure_ascii=False) if message.column_sources is not None else None,
+            metric_definitions=json.dumps(
+                _to_json_safe(message.metric_definitions), ensure_ascii=False
+            )
+            if message.metric_definitions is not None
+            else None,
+            column_sources=json.dumps(
+                _to_json_safe(message.column_sources), ensure_ascii=False
+            )
+            if message.column_sources is not None
+            else None,
         )
         self.session.add(model)
         # 会话活跃度：有消息落库就刷新会话更新时间，

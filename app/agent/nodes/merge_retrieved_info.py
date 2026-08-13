@@ -56,10 +56,10 @@ async def merge_retrieved_info(
         for retrieved_metric_info in retrieved_metric_infos:
             for relevant_column in retrieved_metric_info.relevant_columns:
                 if relevant_column not in retrieved_column_infos_map:
-                    column_info: ColumnInfo | None = (
-                        await meta_mysql_repository.get_column_info_by_id(
-                            relevant_column
-                        )
+                    column_info: (
+                        ColumnInfo | None
+                    ) = await meta_mysql_repository.get_column_info_by_id(
+                        relevant_column
                     )
                     # 指标依赖字段在 Meta 库里可能已下线/被删，
                     # 查不到就跳过，不能把 None 塞进 map 导致后续 .table_id 崩溃
@@ -78,9 +78,9 @@ async def merge_retrieved_info(
             value = retrieved_value_info.value
             column_id = retrieved_value_info.column_id
             if column_id not in retrieved_column_infos_map:
-                column_info: ColumnInfo | None = (
-                    await meta_mysql_repository.get_column_info_by_id(column_id)
-                )
+                column_info: (
+                    ColumnInfo | None
+                ) = await meta_mysql_repository.get_column_info_by_id(column_id)
                 if column_info is None:
                     logger.warning(
                         f"字段取值命中的字段不存在，跳过回填 | column_id={column_id}"
@@ -119,9 +119,9 @@ async def merge_retrieved_info(
         # 让后续过滤和 SQL 生成节点面对的是更稳定的 TableInfoState 结构。
         table_infos: list[TableInfoState] = []
         for table_id, column_infos in table_to_columns_map.items():
-            table_info: TableInfo | None = (
-                await meta_mysql_repository.get_table_info_by_id(table_id)
-            )
+            table_info: (
+                TableInfo | None
+            ) = await meta_mysql_repository.get_table_info_by_id(table_id)
             # 表被下线后按 id 可能查不到，跳过这张表而不是用 None.name 崩溃
             if table_info is None:
                 logger.warning(f"候选表不存在，跳过 | table_id={table_id}")

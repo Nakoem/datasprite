@@ -214,6 +214,7 @@ class QueryService:
                     result["error"] = chunk.get("message")
 
         from app.conf.app_config import app_config
+
         timeout = app_config.llm.query_timeout
         try:
             await asyncio.wait_for(_collect(), timeout=timeout)
@@ -227,6 +228,7 @@ class QueryService:
         if result["data"] and result["error"] is None:
             try:
                 from app.services.chart_service import generate_chart
+
                 chart_b64 = generate_chart(result["data"], query)
                 if chart_b64:
                     result["chart_image_base64"] = chart_b64
@@ -236,7 +238,8 @@ class QueryService:
         if result["sql"] is None and result["error"] is None:
             logger.warning(
                 "query_sync 未拿到数据 | query={} | seen_types={}",
-                query[:100], seen_types,
+                query[:100],
+                seen_types,
             )
 
         return result
@@ -248,6 +251,7 @@ class QueryService:
         防止 LLM 假死导致 SSE 挂起不落帧。
         """
         from app.conf.app_config import app_config
+
         timeout = app_config.llm.query_timeout
         try:
             async with asyncio.timeout(timeout):

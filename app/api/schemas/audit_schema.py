@@ -6,8 +6,10 @@ from pydantic import BaseModel
 
 # ── 审计日志 ──────────────────────────────────────────────
 
+
 class AuditStepSchema(BaseModel):
     """审计中单步执行记录"""
+
     step_name: str
     step_order: int
     status: str
@@ -16,6 +18,7 @@ class AuditStepSchema(BaseModel):
 
 class AuditEntrySchema(BaseModel):
     """一次问数的完整审计"""
+
     question: str
     sql: str | None = None
     execution_time_ms: int | None = None
@@ -31,6 +34,7 @@ class AuditTrailResponse(BaseModel):
 
 
 # ── Checkpoint 回放 ───────────────────────────────────────
+
 
 class CheckpointSummarySchema(BaseModel):
     checkpoint_id: str

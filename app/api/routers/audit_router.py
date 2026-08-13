@@ -40,9 +40,7 @@ async def list_checkpoints(
     }
 
 
-@audit_router.get(
-    "/api/conversations/{conversation_id}/checkpoints/{checkpoint_id}"
-)
+@audit_router.get("/api/conversations/{conversation_id}/checkpoints/{checkpoint_id}")
 async def get_checkpoint(
     conversation_id: str,
     checkpoint_id: str,
@@ -54,18 +52,14 @@ async def get_checkpoint(
         conversation_id,
         checkpoint_id,
     )
-    detail = await audit_service.get_checkpoint_detail(
-        conversation_id, checkpoint_id
-    )
+    detail = await audit_service.get_checkpoint_detail(conversation_id, checkpoint_id)
     if detail is None:
         logger.warning(
             "检查点不存在 | conversation_id={} checkpoint_id={}",
             conversation_id,
             checkpoint_id,
         )
-        return JSONResponse(
-            status_code=404, content={"detail": "检查点不存在"}
-        )
+        return JSONResponse(status_code=404, content={"detail": "检查点不存在"})
     return detail
 
 
@@ -96,6 +90,4 @@ async def diff_checkpoints(
             base,
             checkpoint_id,
         )
-        return JSONResponse(
-            status_code=404, content={"detail": "检查点不存在"}
-        )
+        return JSONResponse(status_code=404, content={"detail": "检查点不存在"})

@@ -18,15 +18,20 @@ import re
 from decimal import Decimal
 
 # 年月/日期形态的正则（字符串模式无歧义，可安全归一）
-_YM_STR_RE = re.compile(r"^(\d{4})-(\d{1,2})$")         # '2025-01'
-_YM_INT_STR_RE = re.compile(r"^(\d{4})(\d{2})$")        # '202501'（SUBSTRING 产物）
-_YM_CN_RE = re.compile(r"^(\d{4})年(\d{1,2})月$")       # '2025年1月'
+_YM_STR_RE = re.compile(r"^(\d{4})-(\d{1,2})$")  # '2025-01'
+_YM_INT_STR_RE = re.compile(r"^(\d{4})(\d{2})$")  # '202501'（SUBSTRING 产物）
+_YM_CN_RE = re.compile(r"^(\d{4})年(\d{1,2})月$")  # '2025年1月'
 _DATE_STR_RE = re.compile(r"^(\d{4})-(\d{1,2})-(\d{1,2})$")  # '2025-01-15'
 
 # 整数 YYYYMM 归一化需列名像时间键（保守，防普通数值误判）。
 # 只用月度/日期类子串，不放 year/week 等易匹配到普通列（如 year_total）的子串。
 _TIME_COL_HINTS = (
-    "month", "date", "月份", "日期", "年月", "季度",
+    "month",
+    "date",
+    "月份",
+    "日期",
+    "年月",
+    "季度",
 )
 
 

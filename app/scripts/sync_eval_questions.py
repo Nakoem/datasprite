@@ -128,7 +128,7 @@ def _load_handled(path: Path = STATE_PATH) -> dict:
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
         return {"handled": data.get("handled", {})}
-    except (FileNotFoundError, json.JSONDecodeError):
+    except FileNotFoundError, json.JSONDecodeError:
         return {"handled": {}}
 
 
@@ -453,7 +453,9 @@ async def _run_inner(
     if new_cands:
         report_dir.mkdir(parents=True, exist_ok=True)
         ts = datetime.now().strftime("%Y%m%d-%H%M%S")
-        _write_review_report(report_dir / f"review-{ts}.md", new_cands, reviews, verify, already)
+        _write_review_report(
+            report_dir / f"review-{ts}.md", new_cands, reviews, verify, already
+        )
         if reviews:
             (report_dir / f"ai-review-{ts}.json").write_text(
                 json.dumps(reviews, ensure_ascii=False, indent=2, default=str),
@@ -464,20 +466,26 @@ async def _run_inner(
 
     # 控制台 ASCII/中文摘要（Windows GBK 打不了 emoji）
     print(
-        f"配对 {len(candidates)} 条：新候选 {len(new_cands)}，"
-        f"已在评测集 {len(already)}"
+        f"配对 {len(candidates)} 条：新候选 {len(new_cands)}，已在评测集 {len(already)}"
     )
     if reviews:
         counts = {v: sum(1 for r in reviews if r["verdict"] == v) for v in _VERDICTS}
-        print(f"AI 审核：promote {counts['promote']} / filter {counts['filter']} / defer {counts['defer']}")
+        print(
+            f"AI 审核：promote {counts['promote']} / filter {counts['filter']} / defer {counts['defer']}"
+        )
     if applied:
         ids = ", ".join(e["id"] for e in entries)
-        print(f"晋升写入：{len(entries)} 条（{ids}）→ {questions_path}（git diff 可回退）")
+        print(
+            f"晋升写入：{len(entries)} 条（{ids}）→ {questions_path}（git diff 可回退）"
+        )
     if apply and not applied:
         print("[apply] 无晋升（promote+硬验证为空），questions.yaml 未改动")
-    if apply and entries and not all(
-        r["hard_verified"] for r in reviews if r["verdict"] == "promote"
-    ) and apply_all:
+    if (
+        apply
+        and entries
+        and not all(r["hard_verified"] for r in reviews if r["verdict"] == "promote")
+        and apply_all
+    ):
         print("[apply-all] 含硬验证未通过但被强制写入的条目，请人工复核")
     if new_cands:
         print(f"候选审核报告：{report_dir / f'review-{ts}.md'}")
@@ -485,7 +493,11 @@ async def _run_inner(
 
 
 def _write_review_report(
-    path: Path, new_cands: list[dict], reviews: list[dict], verify: bool, already: list[dict]
+    path: Path,
+    new_cands: list[dict],
+    reviews: list[dict],
+    verify: bool,
+    already: list[dict],
 ) -> None:
     """候选审核报告：保留原有可运行性信息，每条新候选附 AI 判定"""
     out = [

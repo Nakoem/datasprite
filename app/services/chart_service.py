@@ -14,9 +14,10 @@ import re
 from typing import Any
 
 import matplotlib
+
 matplotlib.use("Agg")  # 非交互式后端，不弹窗
-import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
+import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 import numpy as np
 
@@ -25,6 +26,7 @@ from app.core.log import logger
 # ═══════════════════════════════════════════════════════════════
 # 中文字体
 # ═══════════════════════════════════════════════════════════════
+
 
 def _setup_chinese_font():
     """查找可用中文字体并设为默认，找不到则回退 sans-serif"""
@@ -59,7 +61,7 @@ CATEGORICAL = [
     "#eb6834",  # orange
 ]
 
-EMPHASIS = "#5E7855"       # moss 品牌色（单系列）
+EMPHASIS = "#5E7855"  # moss 品牌色（单系列）
 EMPHASIS_AREA = "#5E785519"  # moss 10% 透明度（面积填充）— 用 hex alpha
 CHROME = {
     "gridline": "#E5E0D4",
@@ -86,17 +88,32 @@ def _to_rgba(hex_color: str, alpha: float = 1.0) -> tuple[float, ...]:
 # ═══════════════════════════════════════════════════════════════
 
 TIME_KEYWORDS = [
-    "日期", "时间", "月份", "季度", "年份", "年", "月", "日", "季",
-    "date", "time", "month", "quarter", "year", "day", "week", "周",
+    "日期",
+    "时间",
+    "月份",
+    "季度",
+    "年份",
+    "年",
+    "月",
+    "日",
+    "季",
+    "date",
+    "time",
+    "month",
+    "quarter",
+    "year",
+    "day",
+    "week",
+    "周",
 ]
 
 TIME_VALUE_RE = re.compile(
-    r"^\d{6}$"             # 202401 (YYYYMM)
-    r"|^\d{8}$"             # 20240101 (YYYYMMDD)
+    r"^\d{6}$"  # 202401 (YYYYMM)
+    r"|^\d{8}$"  # 20240101 (YYYYMMDD)
     r"|^\d{4}[年/\-]\d{1,2}"  # 2024-01 / 2024年1月
-    r"|^\d{4}Q[1-4]"        # 2024Q1
-    r"|^Q[1-4]\s?\d{4}"     # Q1 2024
-    r"|^\d{4}$"             # 2024 (仅年份)
+    r"|^\d{4}Q[1-4]"  # 2024Q1
+    r"|^Q[1-4]\s?\d{4}"  # Q1 2024
+    r"|^\d{4}$"  # 2024 (仅年份)
 )
 
 PIE_MAX_SEGMENTS = 6
@@ -115,7 +132,8 @@ def _is_time_column(name: str, sample_values: list[Any]) -> bool:
     if any(kw in lower for kw in TIME_KEYWORDS):
         return True
     hits = sum(
-        1 for v in sample_values
+        1
+        for v in sample_values
         if isinstance(v, str) and TIME_VALUE_RE.search(v.strip())
     )
     return hits >= min(3, len(sample_values))
@@ -124,8 +142,7 @@ def _is_time_column(name: str, sample_values: list[Any]) -> bool:
 def _is_numeric_column(values: list[Any]) -> bool:
     """判断列是否数值型（≥80% 能转成数字）"""
     hits = sum(
-        1 for v in values
-        if v is not None and v != "" and _try_number(v) is not None
+        1 for v in values if v is not None and v != "" and _try_number(v) is not None
     )
     return hits >= len(values) * 0.8
 
@@ -134,7 +151,7 @@ def _try_number(v: Any) -> float | None:
     """尝试把值转为 float，失败返回 None"""
     try:
         return float(v)
-    except (ValueError, TypeError):
+    except ValueError, TypeError:
         return None
 
 
@@ -194,9 +211,7 @@ def _normalize_rows(data: Any) -> list[dict[str, Any]]:
     return [{"值": data}]
 
 
-def detect_chart_type(
-    data: Any, query: str | None = None
-) -> dict[str, Any]:
+def detect_chart_type(data: Any, query: str | None = None) -> dict[str, Any]:
     """
     分析查询结果，返回图表类型建议。
 
@@ -206,11 +221,21 @@ def detect_chart_type(
     """
     rows = _normalize_rows(data)
     if len(rows) == 0:
-        return {"chartType": None, "dimensionCol": None, "measureCols": [], "reason": "无数据"}
+        return {
+            "chartType": None,
+            "dimensionCol": None,
+            "measureCols": [],
+            "reason": "无数据",
+        }
 
     columns = list(rows[0].keys())
     if len(columns) < 2:
-        return {"chartType": "table", "dimensionCol": None, "measureCols": [], "reason": "仅单列"}
+        return {
+            "chartType": "table",
+            "dimensionCol": None,
+            "measureCols": [],
+            "reason": "仅单列",
+        }
 
     sample_size = min(len(rows), 10)
     sample_rows = rows[:sample_size]
@@ -234,7 +259,12 @@ def detect_chart_type(
         dim_cols.append(c)
 
     if not measure_cols:
-        return {"chartType": "table", "dimensionCol": None, "measureCols": [], "reason": "无度量值列"}
+        return {
+            "chartType": "table",
+            "dimensionCol": None,
+            "measureCols": [],
+            "reason": "无度量值列",
+        }
 
     primary_dim = dim_cols[0] if dim_cols else columns[0]
     primary_measure = measure_cols[0]
@@ -259,8 +289,16 @@ def detect_chart_type(
                 "measureCols": measure_cols,
             }
         if len(measure_cols) == 1:
-            return {"chartType": "area", "dimensionCol": time_col, "measureCols": measure_cols}
-        return {"chartType": "line", "dimensionCol": time_col, "measureCols": measure_cols}
+            return {
+                "chartType": "area",
+                "dimensionCol": time_col,
+                "measureCols": measure_cols,
+            }
+        return {
+            "chartType": "line",
+            "dimensionCol": time_col,
+            "measureCols": measure_cols,
+        }
 
     # 单度量
     if len(measure_cols) == 1 and dim_cols:
@@ -272,12 +310,14 @@ def detect_chart_type(
             _is_part_whole_col(primary_measure) or _query_asks_part_whole(query)
         ) and _values_look_like_ratio(vals_f)
         if part_whole and 2 <= len(rows) <= PIE_MAX_SEGMENTS:
-            return {"chartType": "pie", "dimensionCol": primary_dim, "measureCols": measure_cols}
+            return {
+                "chartType": "pie",
+                "dimensionCol": primary_dim,
+                "measureCols": measure_cols,
+            }
 
         # 双维度交叉
-        non_time_dims = [
-            c for c in dim_cols if not _is_time_column(c, col_values(c))
-        ]
+        non_time_dims = [c for c in dim_cols if not _is_time_column(c, col_values(c))]
         if non_time_dims and len(non_time_dims) >= 2:
             if HEATMAP_MIN_CELLS <= len(rows) <= 30:
                 return {
@@ -294,7 +334,11 @@ def detect_chart_type(
                     "measureCols": measure_cols,
                 }
 
-        return {"chartType": "bar", "dimensionCol": primary_dim, "measureCols": measure_cols}
+        return {
+            "chartType": "bar",
+            "dimensionCol": primary_dim,
+            "measureCols": measure_cols,
+        }
 
     # 多度量
     if (
@@ -306,8 +350,16 @@ def detect_chart_type(
         for m in measure_cols:
             measure_vals[m] = [_try_number(r.get(m, 0)) or 0 for r in rows]
         if _measures_same_scale(measure_vals):
-            return {"chartType": "stackedBar", "dimensionCol": primary_dim, "measureCols": measure_cols}
-        return {"chartType": "bar", "dimensionCol": primary_dim, "measureCols": measure_cols}
+            return {
+                "chartType": "stackedBar",
+                "dimensionCol": primary_dim,
+                "measureCols": measure_cols,
+            }
+        return {
+            "chartType": "bar",
+            "dimensionCol": primary_dim,
+            "measureCols": measure_cols,
+        }
 
     return {
         "chartType": "table",
@@ -321,13 +373,14 @@ def detect_chart_type(
 # 格式化
 # ═══════════════════════════════════════════════════════════════
 
+
 def _fmt(v: Any) -> str:
     """数值格式化（对应前端 formatValue）"""
     if v is None:
         return "-"
     try:
         n = float(v)
-    except (ValueError, TypeError):
+    except ValueError, TypeError:
         return str(v)
     if n >= 1_000_000:
         return f"{n / 1_000_000:.1f}M"
@@ -352,12 +405,17 @@ def _set_chrome(ax: plt.Axes):
     """统一 chrome 样式"""
     ax.set_facecolor(CHROME["surface"])
     ax.grid(
-        True, axis="y", color=CHROME["gridline"],
-        linewidth=0.8, zorder=0,
+        True,
+        axis="y",
+        color=CHROME["gridline"],
+        linewidth=0.8,
+        zorder=0,
     )
     ax.tick_params(
-        colors=CHROME["inkMuted"], labelsize=10,
-        left=False, bottom=False,
+        colors=CHROME["inkMuted"],
+        labelsize=10,
+        left=False,
+        bottom=False,
     )
     for spine in ax.spines.values():
         spine.set_visible(False)
@@ -433,18 +491,25 @@ def _generate_bar_chart(rows: list[dict], hint: dict) -> io.BytesIO:
         color = EMPHASIS if n_bars == 1 else CATEGORICAL[i % len(CATEGORICAL)]
         offset = (i - (n_bars - 1) / 2) * bar_w
         ax.bar(
-            x + offset, vals, bar_w * 0.9,
+            x + offset,
+            vals,
+            bar_w * 0.9,
             color=_to_rgba(color),
-            edgecolor="white", linewidth=0.5,
+            edgecolor="white",
+            linewidth=0.5,
             label=key if n_bars > 1 else None,
             zorder=3,
         )
 
     ax.set_xticks(x)
-    ax.set_xticklabels(labels, rotation=30, ha="right", fontsize=9, color=CHROME["inkSecondary"])
+    ax.set_xticklabels(
+        labels, rotation=30, ha="right", fontsize=9, color=CHROME["inkSecondary"]
+    )
     if n_bars > 1:
         ax.legend(
-            fontsize=9, frameon=False, labelcolor=CHROME["inkSecondary"],
+            fontsize=9,
+            frameon=False,
+            labelcolor=CHROME["inkSecondary"],
             loc="upper right",
         )
 
@@ -471,19 +536,28 @@ def _generate_line_chart(rows: list[dict], hint: dict) -> io.BytesIO:
         vals = [d.get(key, 0) for d in chart_data]
         color = EMPHASIS if len(data_keys) == 1 else CATEGORICAL[i % len(CATEGORICAL)]
         ax.plot(
-            x, vals,
-            color=_to_rgba(color), linewidth=2,
-            marker="o", markersize=5,
-            markerfacecolor=color, markeredgecolor="white", markeredgewidth=1.5,
+            x,
+            vals,
+            color=_to_rgba(color),
+            linewidth=2,
+            marker="o",
+            markersize=5,
+            markerfacecolor=color,
+            markeredgecolor="white",
+            markeredgewidth=1.5,
             label=key if len(data_keys) > 1 else None,
             zorder=3,
         )
 
     ax.set_xticks(x)
-    ax.set_xticklabels(labels, rotation=30, ha="right", fontsize=9, color=CHROME["inkSecondary"])
+    ax.set_xticklabels(
+        labels, rotation=30, ha="right", fontsize=9, color=CHROME["inkSecondary"]
+    )
     if len(data_keys) > 1:
         ax.legend(
-            fontsize=9, frameon=False, labelcolor=CHROME["inkSecondary"],
+            fontsize=9,
+            frameon=False,
+            labelcolor=CHROME["inkSecondary"],
             loc="upper right",
         )
 
@@ -510,24 +584,35 @@ def _generate_area_chart(rows: list[dict], hint: dict) -> io.BytesIO:
         vals = [d.get(key, 0) for d in chart_data]
         color = EMPHASIS if len(data_keys) == 1 else CATEGORICAL[i % len(CATEGORICAL)]
         ax.fill_between(
-            x, vals,
+            x,
+            vals,
             color=_to_rgba(color, 0.10),
-            step=None, zorder=2,
+            step=None,
+            zorder=2,
         )
         ax.plot(
-            x, vals,
-            color=_to_rgba(color), linewidth=2,
-            marker="o", markersize=5,
-            markerfacecolor=color, markeredgecolor="white", markeredgewidth=1.5,
+            x,
+            vals,
+            color=_to_rgba(color),
+            linewidth=2,
+            marker="o",
+            markersize=5,
+            markerfacecolor=color,
+            markeredgecolor="white",
+            markeredgewidth=1.5,
             label=key if len(data_keys) > 1 else None,
             zorder=3,
         )
 
     ax.set_xticks(x)
-    ax.set_xticklabels(labels, rotation=30, ha="right", fontsize=9, color=CHROME["inkSecondary"])
+    ax.set_xticklabels(
+        labels, rotation=30, ha="right", fontsize=9, color=CHROME["inkSecondary"]
+    )
     if len(data_keys) > 1:
         ax.legend(
-            fontsize=9, frameon=False, labelcolor=CHROME["inkSecondary"],
+            fontsize=9,
+            frameon=False,
+            labelcolor=CHROME["inkSecondary"],
             loc="upper right",
         )
 
@@ -570,7 +655,8 @@ def _generate_pie_chart(rows: list[dict], hint: dict) -> io.BytesIO:
 
     # 图例放右侧
     ax.legend(
-        wedges, labels,
+        wedges,
+        labels,
         title="",
         loc="center left",
         bbox_to_anchor=(1, 0.5),
@@ -602,19 +688,26 @@ def _generate_stacked_bar_chart(rows: list[dict], hint: dict) -> io.BytesIO:
         vals = [d.get(key, 0) for d in chart_data]
         color = CATEGORICAL[i % len(CATEGORICAL)]
         ax.bar(
-            x, vals, bar_w,
+            x,
+            vals,
+            bar_w,
             bottom=bottom,
             color=_to_rgba(color),
-            edgecolor="white", linewidth=0.5,
+            edgecolor="white",
+            linewidth=0.5,
             label=key,
             zorder=3,
         )
         bottom += np.array(vals)
 
     ax.set_xticks(x)
-    ax.set_xticklabels(labels, rotation=30, ha="right", fontsize=9, color=CHROME["inkSecondary"])
+    ax.set_xticklabels(
+        labels, rotation=30, ha="right", fontsize=9, color=CHROME["inkSecondary"]
+    )
     ax.legend(
-        fontsize=9, frameon=False, labelcolor=CHROME["inkSecondary"],
+        fontsize=9,
+        frameon=False,
+        labelcolor=CHROME["inkSecondary"],
         loc="upper right",
     )
 
@@ -632,7 +725,15 @@ def _empty_buf() -> io.BytesIO:
     """空图片（兜底）"""
     buf = io.BytesIO()
     fig, ax = plt.subplots(figsize=(FIG_W, 1), dpi=DPI)
-    ax.text(0.5, 0.5, "暂无图表", ha="center", va="center", fontsize=12, color=CHROME["inkMuted"])
+    ax.text(
+        0.5,
+        0.5,
+        "暂无图表",
+        ha="center",
+        va="center",
+        fontsize=12,
+        color=CHROME["inkMuted"],
+    )
     ax.axis("off")
     fig.savefig(buf, format="png", dpi=DPI, facecolor="white")
     plt.close(fig)
@@ -653,9 +754,7 @@ _CHART_GENERATORS = {
 }
 
 
-def generate_chart(
-    data: Any, query: str | None = None
-) -> str | None:
+def generate_chart(data: Any, query: str | None = None) -> str | None:
     """
     从查询结果生成图表，返回 base64 编码的 PNG 字符串。
 
@@ -670,7 +769,8 @@ def generate_chart(
         if chart_type == "table":
             logger.debug(
                 "chart_service: 检测为 table | reason={} | measureCols={}",
-                hint.get("reason"), hint.get("measureCols"),
+                hint.get("reason"),
+                hint.get("measureCols"),
             )
         return None
 
@@ -685,7 +785,9 @@ def generate_chart(
         b64 = base64.b64encode(buf.read()).decode("ascii")
         logger.info(
             "chart_service: 生成 {} 图表 | 数据行数={} | size={:.1f}KB",
-            chart_type, len(rows), len(b64) / 1024,
+            chart_type,
+            len(rows),
+            len(b64) / 1024,
         )
         return b64
     except Exception:

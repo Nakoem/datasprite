@@ -60,9 +60,7 @@ app = FastAPI(
 # 登录接口不鉴权；会话/审计接口需要 JWT 登录态（/api/query 在 query_router 内单独加依赖）
 app.include_router(auth_router)
 app.include_router(query_router)
-app.include_router(
-    conversation_router, dependencies=[Depends(get_current_user)]
-)
+app.include_router(conversation_router, dependencies=[Depends(get_current_user)])
 app.include_router(audit_router, dependencies=[Depends(get_current_user)])
 
 # ── API 限流（双层令牌桶，实现见 app/core/rate_limiter.py）──────────

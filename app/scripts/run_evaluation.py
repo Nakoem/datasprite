@@ -116,12 +116,14 @@ async def _run_graph(
     )
     final = None
     try:
+
         async def _astream():
             nonlocal final
             async for chunk in graph.astream(
                 input=state, context=context, stream_mode="values"
             ):
                 final = chunk
+
         await asyncio.wait_for(_astream(), timeout=timeout)
     except asyncio.TimeoutError:
         return {"_error": f"链路执行超时（{timeout}秒）"}
@@ -230,12 +232,20 @@ def _build_report(results: list[dict], started_at: str) -> str:
         cp = sum(1 for r in items if r["pass"])
         lines.append(f"| {cat} | {cp}/{len(items)} | {cp / len(items):.0%} |")
 
-    lines += ["", "## 明细", "", "| ID | 问题 | 类别 | 结果 | 原因 |", "|----|------|------|------|------|"]
+    lines += [
+        "",
+        "## 明细",
+        "",
+        "| ID | 问题 | 类别 | 结果 | 原因 |",
+        "|----|------|------|------|------|",
+    ]
     for r in results:
         mark = "✅" if r["pass"] else "❌"
         retry = f"（重试{r['retries']}次）" if r.get("retries") else ""
         mt = f"（多轮{r['context_messages']}条）" if r.get("context_messages") else ""
-        lines.append(f"| {r['id']} | {r['question']} | {r['category']} | {mark} | {r['reason']}{retry}{mt} |")
+        lines.append(
+            f"| {r['id']} | {r['question']} | {r['category']} | {mark} | {r['reason']}{retry}{mt} |"
+        )
 
     fails = [r for r in results if not r["pass"]]
     if fails:
@@ -285,9 +295,13 @@ async def run(
         ):
             dw_repo = DWMySQLRepository(dw_session)
             context = DataAgentContext(
-                column_qdrant_repository=ColumnQdrantRepository(qdrant_client_manager.client),
+                column_qdrant_repository=ColumnQdrantRepository(
+                    qdrant_client_manager.client
+                ),
                 embedding_client=embedding_client_manager.client,
-                metric_qdrant_repository=MetricQdrantRepository(qdrant_client_manager.client),
+                metric_qdrant_repository=MetricQdrantRepository(
+                    qdrant_client_manager.client
+                ),
                 value_es_repository=ValueESRepository(es_client_manager.client),
                 meta_mysql_repository=MetaMySQLRepository(meta_session),
                 dw_mysql_repository=dw_repo,
@@ -324,7 +338,9 @@ async def run(
 
             # 自动捕获新候选（可 --no-capture 关掉；异常绝不影响评测结果）
             if capture:
-                await _capture_candidates(meta_session, dw_session, questions_path, output_dir)
+                await _capture_candidates(
+                    meta_session, dw_session, questions_path, output_dir
+                )
             return passed
     finally:
         await _close_clients()
@@ -366,12 +382,17 @@ async def _capture_candidates(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="DataSprite 问数评测批跑")
     parser.add_argument(
-        "-q", "--questions", type=Path,
+        "-q",
+        "--questions",
+        type=Path,
         default=Path("evaluations/questions.yaml"),
         help="问题集 YAML 路径",
     )
     parser.add_argument(
-        "-o", "--output", type=Path, default=Path("docs/evaluations"),
+        "-o",
+        "--output",
+        type=Path,
+        default=Path("docs/evaluations"),
         help="报告输出目录",
     )
     parser.add_argument("--category", type=str, default=None, help="只跑指定类别")
