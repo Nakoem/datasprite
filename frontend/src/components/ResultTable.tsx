@@ -5,6 +5,7 @@
  */
 import { Database, FileJson } from "lucide-react";
 import { normalizeRows } from "../lib/chartDetector";
+import { columnLabel } from "../lib/fieldLabels";
 
 function formatCell(value: unknown) {
   if (value === null || value === undefined) return "-";
@@ -43,7 +44,7 @@ export function ResultTable({ data }: { data: unknown }) {
             <tr>
               {columns.map((column) => (
                 <th key={column} scope="col">
-                  {column}
+                  {columnLabel(column)}
                 </th>
               ))}
             </tr>

@@ -54,6 +54,7 @@ import {
 } from "lucide-react";
 
 import { detectChartType, normalizeRows } from "../lib/chartDetector";
+import { columnLabel } from "../lib/fieldLabels";
 import { CHROME, categorical, EMPHASIS, SEQUENTIAL } from "../lib/chartColors";
 import { exportCSV, exportExcel } from "../lib/export";
 import { showToast } from "../lib/toast";
@@ -169,8 +170,8 @@ function ChartShell({
   children: React.ReactNode;
 }) {
   const title = hint.dimensionCol
-    ? `${hint.measureCols.join(" / ")} 按 ${hint.dimensionCol}${hint.dimensionCol2 ? ` × ${hint.dimensionCol2}` : ""}`
-    : hint.measureCols.join(" / ");
+    ? `${hint.measureCols.map(columnLabel).join(" / ")} 按 ${columnLabel(hint.dimensionCol)}${hint.dimensionCol2 ? ` × ${columnLabel(hint.dimensionCol2)}` : ""}`
+    : hint.measureCols.map(columnLabel).join(" / ");
   return (
     <section className="card card-bordered overflow-hidden bg-white/70 shadow-line">
       <div className="flex items-center justify-between border-b border-ink/10 px-4 py-3">
@@ -302,7 +303,7 @@ function BarChartView({ data, hint }: { data: unknown; hint: ChartHint }) {
             <Bar
               key={key}
               dataKey={key}
-              name={key}
+              name={columnLabel(key)}
               fill={dataKeys.length === 1 ? "var(--color-primary)" : categorical(i)}
               radius={isHorizontal ? [0, 4, 4, 0] : [4, 4, 0, 0]}
               maxBarSize={24}
@@ -372,7 +373,7 @@ function StackedBarChartView({ data, hint }: { data: unknown; hint: ChartHint })
             <Bar
               key={key}
               dataKey={key}
-              name={key}
+              name={columnLabel(key)}
               stackId="stack"
               fill={categorical(i)}
               radius={
@@ -431,7 +432,7 @@ function LineChartView({ data, hint }: { data: unknown; hint: ChartHint }) {
               key={key}
               type="monotone"
               dataKey={key}
-              name={key}
+              name={columnLabel(key)}
               stroke={dataKeys.length === 1 ? EMPHASIS.light : categorical(i)}
               strokeWidth={2}
               dot={{
@@ -483,7 +484,7 @@ function AreaChartView({ data, hint }: { data: unknown; hint: ChartHint }) {
               key={key}
               type="monotone"
               dataKey={key}
-              name={key}
+              name={columnLabel(key)}
               stroke={dataKeys.length === 1 ? EMPHASIS.light : categorical(i)}
               fill={dataKeys.length === 1 ? EMPHASIS.area : categorical(i) + "18"}
               strokeWidth={2}
@@ -607,7 +608,7 @@ function HeatmapView({ data, hint }: { data: unknown; hint: ChartHint }) {
           <thead>
             <tr>
               <th className="sticky left-0 bg-white/70 px-2 py-1 text-ink/55 font-medium">
-                {dim1} \ {dim2}
+                {columnLabel(dim1)} \ {columnLabel(dim2)}
               </th>
               {colKeys.map((ck) => (
                 <th key={ck} className="px-3 py-1 font-medium text-ink/55">
