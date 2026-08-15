@@ -34,6 +34,9 @@ async def semantic_validate(
         table_infos = state["table_infos"]
         metric_infos = state["metric_infos"]
         db_info = state["db_info"]
+        # 当前日期必须同步给校验 LLM，否则「去年/本月」等相对时间会被瞎猜
+        # （generate_sql/correct_sql 已带 date_info，校验侧不带会导致 2025 被误杀 → 修正死循环）
+        date_info = state.get("date_info")
 
         prompt = PromptTemplate(
             template=load_prompt("semantic_validate"),
@@ -44,6 +47,7 @@ async def semantic_validate(
                 "table_infos",
                 "metric_infos",
                 "sql",
+                "current_date",
             ],
         )
         output_parser = JsonOutputParser()
@@ -61,6 +65,9 @@ async def semantic_validate(
                     metric_infos, allow_unicode=True, sort_keys=False
                 ),
                 "sql": sql,
+                "current_date": yaml.dump(date_info, allow_unicode=True, sort_keys=False)
+                if date_info
+                else "（未知）",
             }
         )
 
