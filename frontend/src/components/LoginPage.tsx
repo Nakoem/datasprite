@@ -5,7 +5,6 @@
 import { BarChart3, KeyRound, User } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { login } from "../lib/authApi";
-import { LiquidDroplets } from "./LiquidDroplets";
 
 type LoginPageProps = {
   onSuccess: () => void;
@@ -53,8 +52,6 @@ export default function LoginPage({ onSuccess }: LoginPageProps) {
               <h1 className="text-xl font-semibold tracking-[0.02em] text-ink">问数精灵</h1>
               <p className="mt-1 text-sm text-ink/50">DataSprite Agent · 欢迎回来</p>
             </div>
-            {/* 可拖拽液态水滴组 */}
-            <LiquidDroplets />
           </div>
 
           {/* 登录失败提示 */}
