@@ -5,6 +5,7 @@
 import { BarChart3, KeyRound, User } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { login } from "../lib/authApi";
+import { MetalFx } from "metal-fx";
 
 type LoginPageProps = {
   onSuccess: () => void;
@@ -95,14 +96,16 @@ export default function LoginPage({ onSuccess }: LoginPageProps) {
               />
             </label>
 
-            <button
-              type="submit"
-              disabled={!canSubmit}
-              className="btn btn-primary mt-2 h-11 w-full border-none text-sm font-semibold text-primary-content"
-            >
-              {submitting && <span className="loading loading-spinner loading-sm" aria-hidden="true" />}
-              {submitting ? "登录中…" : "登 录"}
-            </button>
+            <MetalFx preset="silver" theme="light" strength={0.8}>
+              <button
+                type="submit"
+                disabled={!canSubmit}
+                className="btn btn-primary mt-2 h-11 w-full border-none text-sm font-semibold text-primary-content"
+              >
+                {submitting && <span className="loading loading-spinner loading-sm" aria-hidden="true" />}
+                {submitting ? "登录中…" : "登 录"}
+              </button>
+            </MetalFx>
           </form>
 
           <p className="text-center text-xs text-ink/40">登录即代表你有权限访问该问数系统</p>

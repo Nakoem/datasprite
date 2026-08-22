@@ -15,7 +15,9 @@
   "dependencies": {
     "@vitejs/plugin-react": "^5.1.2",
     "border-beam": "^1.3.0",
+    "liquid-gooey": "^0.1.0",
     "lucide-react": "^0.475.0",
+    "metal-fx": "^1.0.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "recharts": "^3.9.2",
