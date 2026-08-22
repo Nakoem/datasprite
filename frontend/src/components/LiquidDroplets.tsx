@@ -12,12 +12,13 @@ type Drop = { x: number; y: number };
 
 const INITIAL: Drop[] = [
   { x: 0, y: 0 },
-  { x: 56, y: 6 },
-  { x: 112, y: 0 },
-  { x: 168, y: 8 },
+  { x: 38, y: 7 },
+  { x: 76, y: 0 },
+  { x: 114, y: 7 },
+  { x: 152, y: 2 },
 ];
 
-const DROP_SIZE = 48;
+const DROP_SIZE = 52;
 
 export function LiquidDroplets() {
   const [drops, setDrops] = useState(INITIAL);
@@ -64,7 +65,12 @@ export function LiquidDroplets() {
       className="relative h-24"
     >
       {drops.map((d, i) => (
-        <Liquid.Item key={i} dissolve={{ active: dragId === i }} observe>
+        <Liquid.Item
+          key={i}
+          morph={{ shape: true, bounce: 0.6, speed: 1.1 }}
+          dissolve={{ mix: 0.9 }}
+          observe
+        >
           <div
             onPointerDown={(e) => onDown(i, e)}
             onPointerMove={onMove}
