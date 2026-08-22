@@ -7,6 +7,7 @@
  * 改用 DaisyUI alert-success + collapse（口径说明原生开合）。
  */
 import { Calculator, Lightbulb } from "lucide-react";
+import { BorderBeam } from "border-beam";
 
 type MetricDef = {
   name: string;
@@ -29,13 +30,21 @@ export function SummaryCard({ summary, metricDefinitions }: SummaryCardProps) {
     <div className="mt-4 space-y-3">
       {/* ── AI 摘要 ── */}
       {hasSummary && (
-        <div className="alert alert-success alert-soft gap-3">
-          <Lightbulb className="h-4 w-4 shrink-0" aria-hidden="true" />
-          <div className="min-w-0">
-            <div className="mb-1 text-sm font-medium text-ink/70">分析摘要</div>
-            <p className="text-sm leading-6 text-ink/80">{summary}</p>
+        <BorderBeam
+          size="md"
+          colorVariant="ocean"
+          theme="light"
+          strength={0.5}
+          className="rounded-sm"
+        >
+          <div className="alert alert-success alert-soft gap-3">
+            <Lightbulb className="h-4 w-4 shrink-0" aria-hidden="true" />
+            <div className="min-w-0">
+              <div className="mb-1 text-sm font-medium text-ink/70">分析摘要</div>
+              <p className="text-sm leading-6 text-ink/80">{summary}</p>
+            </div>
           </div>
-        </div>
+        </BorderBeam>
       )}
 
       {/* ── 口径说明（可折叠，原生 checkbox 开合） ── */}
