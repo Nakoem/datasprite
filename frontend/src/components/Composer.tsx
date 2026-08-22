@@ -6,7 +6,6 @@
 import { ArrowUp, Square, WandSparkles } from "lucide-react";
 import { FormEvent, KeyboardEvent, useRef, useState } from "react";
 import { BorderBeam } from "border-beam";
-import { MetalFx } from "metal-fx";
 import { cn } from "../lib/format";
 
 type ComposerProps = {
@@ -69,31 +68,29 @@ export function Composer({
                         placeholder="问一个电商数据问题..."
                         className="max-h-36 min-h-11 flex-1 resize-none bg-transparent px-2 py-3 text-[15px] leading-6 text-ink outline-none placeholder:text-ink/35"
                     />
-                    <MetalFx variant="circle" preset="chromatic" theme="light" strength={0.85}>
-                        <button
-                            type={isStreaming ? "button" : "submit"}
-                            onClick={isStreaming ? onStop : undefined}
-                            disabled={!isStreaming && disabled}
-                            className={cn(
-                                "btn btn-circle h-11 w-11 shrink-0",
-                                isStreaming
-                                    ? "btn-error text-error-content"
-                                    : "btn-primary text-primary-content",
-                                !isStreaming && disabled && "btn-disabled",
-                            )}
-                            title={isStreaming ? "停止" : "发送"}
-                            aria-label={isStreaming ? "停止" : "发送"}
-                        >
-                            {isStreaming ? (
-                                <Square
-                                    className="h-4 w-4 fill-current"
-                                    aria-hidden="true"
-                                />
-                            ) : (
-                                <ArrowUp className="h-5 w-5" aria-hidden="true" />
-                            )}
-                        </button>
-                    </MetalFx>
+                    <button
+                        type={isStreaming ? "button" : "submit"}
+                        onClick={isStreaming ? onStop : undefined}
+                        disabled={!isStreaming && disabled}
+                        className={cn(
+                            "btn btn-circle h-11 w-11 shrink-0",
+                            isStreaming
+                                ? "btn-error text-error-content"
+                                : "btn-primary text-primary-content",
+                            !isStreaming && disabled && "btn-disabled",
+                        )}
+                        title={isStreaming ? "停止" : "发送"}
+                        aria-label={isStreaming ? "停止" : "发送"}
+                    >
+                        {isStreaming ? (
+                            <Square
+                                className="h-4 w-4 fill-current"
+                                aria-hidden="true"
+                            />
+                        ) : (
+                            <ArrowUp className="h-5 w-5" aria-hidden="true" />
+                        )}
+                    </button>
                 </div>
             </BorderBeam>
         </form>
