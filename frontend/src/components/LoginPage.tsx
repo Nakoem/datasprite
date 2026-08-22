@@ -5,7 +5,7 @@
 import { BarChart3, KeyRound, User } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { login } from "../lib/authApi";
-import { MetalFx } from "metal-fx";
+import { Liquid } from "liquid-gooey";
 
 type LoginPageProps = {
   onSuccess: () => void;
@@ -53,6 +53,18 @@ export default function LoginPage({ onSuccess }: LoginPageProps) {
               <h1 className="text-xl font-semibold tracking-[0.02em] text-ink">问数精灵</h1>
               <p className="mt-1 text-sm text-ink/50">DataSprite Agent · 欢迎回来</p>
             </div>
+            {/* Gooey 液态水滴：紧密相邻的圆点互相黏连成魔法液体 */}
+            <Liquid
+              fill="rgba(94, 120, 85, 0.42)"
+              blur={22}
+              contrast={30}
+              className="flex items-center"
+            >
+              <Liquid.Item className="h-9 w-9 -mx-2 rounded-full bg-moss/60" />
+              <Liquid.Item className="h-9 w-9 -mx-2 rounded-full bg-moss/60" />
+              <Liquid.Item className="h-7 w-7 -mx-2 rounded-full bg-brass/60" />
+              <Liquid.Item className="h-9 w-9 -mx-2 rounded-full bg-moss/60" />
+            </Liquid>
           </div>
 
           {/* 登录失败提示 */}
@@ -96,16 +108,14 @@ export default function LoginPage({ onSuccess }: LoginPageProps) {
               />
             </label>
 
-            <MetalFx preset="silver" theme="light" strength={0.8}>
-              <button
-                type="submit"
-                disabled={!canSubmit}
-                className="btn btn-primary mt-2 h-11 w-full border-none text-sm font-semibold text-primary-content"
-              >
-                {submitting && <span className="loading loading-spinner loading-sm" aria-hidden="true" />}
-                {submitting ? "登录中…" : "登 录"}
-              </button>
-            </MetalFx>
+            <button
+              type="submit"
+              disabled={!canSubmit}
+              className="btn btn-primary mt-2 h-11 w-full border-none text-sm font-semibold text-primary-content"
+            >
+              {submitting && <span className="loading loading-spinner loading-sm" aria-hidden="true" />}
+              {submitting ? "登录中…" : "登 录"}
+            </button>
           </form>
 
           <p className="text-center text-xs text-ink/40">登录即代表你有权限访问该问数系统</p>

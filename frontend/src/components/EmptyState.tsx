@@ -4,7 +4,6 @@
  * 改用 DaisyUI 组件：badge / card / btn
  */
 import { LineChart, Search, ShoppingBag, Sparkles } from "lucide-react";
-import { Liquid } from "liquid-gooey";
 
 type EmptyStateProps = {
   examples: string[];
@@ -30,17 +29,17 @@ export function EmptyState({ examples, onUseExample }: EmptyStateProps) {
         </h1>
       </div>
 
-      <Liquid fill="rgba(94, 120, 85, 0.18)" className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-3">
         {highlights.map((item) => {
           const Icon = item.icon;
           return (
-            <Liquid.Item effect="morph" key={item.label} className="card card-bordered bg-white/55 px-4 py-4 shadow-none">
+            <div key={item.label} className="card card-bordered bg-white/55 px-4 py-4 shadow-none">
               <Icon className="mb-5 h-5 w-5 text-brass" aria-hidden="true" />
               <div className="text-sm font-semibold text-ink">{item.label}</div>
-            </Liquid.Item>
+            </div>
           );
         })}
-      </Liquid>
+      </div>
 
       <div className="mt-6 grid gap-3 md:grid-cols-2">
         {examples.map((example) => (
