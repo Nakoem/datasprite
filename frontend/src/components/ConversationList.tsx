@@ -5,7 +5,6 @@
  * 改用 DaisyUI menu 组件（menu-active 激活态自动用品牌主色 moss）。
  */
 import { MessageSquare, Trash2 } from "lucide-react";
-import { BorderBeam } from "border-beam";
 import { useState } from "react";
 import { cn } from "../lib/format";
 import type { Conversation } from "../types/agent";
@@ -93,13 +92,7 @@ export function ConversationList({
             onMouseEnter={() => setHoverId(conv.id)}
             onMouseLeave={() => setHoverId(null)}
           >
-            {isActive ? (
-              <BorderBeam size="md" colorVariant="ocean" theme="light" strength={0.45} className="rounded-md">
-                {activeBtn}
-              </BorderBeam>
-            ) : (
-              activeBtn
-            )}
+            {activeBtn}
             {hoverId === conv.id && (
               <button
                 type="button"
