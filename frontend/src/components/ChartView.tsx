@@ -52,6 +52,7 @@ import {
   ChevronDown,
   SearchX,
 } from "lucide-react";
+import { BorderBeam } from "border-beam";
 
 import { detectChartType, normalizeRows } from "../lib/chartDetector";
 import { columnLabel } from "../lib/fieldLabels";
@@ -173,14 +174,16 @@ function ChartShell({
     ? `${hint.measureCols.map(columnLabel).join(" / ")} 按 ${columnLabel(hint.dimensionCol)}${hint.dimensionCol2 ? ` × ${columnLabel(hint.dimensionCol2)}` : ""}`
     : hint.measureCols.map(columnLabel).join(" / ");
   return (
-    <section className="card card-bordered overflow-hidden bg-white/70 shadow-line">
-      <div className="flex items-center justify-between border-b border-ink/10 px-4 py-3">
-        <span className="text-sm font-semibold text-ink">{title}</span>
-      </div>
-      <div className="px-2 pb-2 pt-3" style={{ height: 320 }}>
-        {children}
-      </div>
-    </section>
+    <BorderBeam size="md" colorVariant="ocean" theme="light" strength={0.4} className="mb-2 rounded-lg">
+      <section className="card card-bordered overflow-hidden bg-white/70 shadow-line">
+        <div className="flex items-center justify-between border-b border-ink/10 px-4 py-3">
+          <span className="text-sm font-semibold text-ink">{title}</span>
+        </div>
+        <div className="px-2 pb-2 pt-3" style={{ height: 320 }}>
+          {children}
+        </div>
+      </section>
+    </BorderBeam>
   );
 }
 

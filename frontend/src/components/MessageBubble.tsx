@@ -4,6 +4,7 @@
  * 改用 DaisyUI chat 组件：chat-start/chat-end + chat-bubble
  */
 import { AlertTriangle, Copy, RefreshCw } from "lucide-react";
+import { BorderBeam } from "border-beam";
 import { ChartView } from "./ChartView";
 import { ClarificationPanel } from "./ClarificationPanel";
 import { SourceCard } from "./SourceCard";
@@ -105,16 +106,18 @@ export function MessageBubble({ message, onClarificationSelect, onRetry }: Messa
 
         {/* 骨架屏：流式执行中还没出结果时给个占位 */}
         {!isUser && isStreaming && !hasResult && (
-          <div className="mt-4 space-y-3">
-            <div className="skeleton h-5 w-2/3 rounded" />
-            <div className="flex h-48 w-full items-center justify-center rounded border border-dashed border-ink/15 bg-ink/[0.02]">
-              <div className="flex flex-col items-center gap-3">
-                <span className="loading loading-spinner loading-md text-moss/50" />
-                <span className="text-xs text-ink/35">正在分析数据…</span>
+          <BorderBeam size="md" colorVariant="ocean" theme="light" strength={0.55} className="mt-4 rounded-md">
+            <div className="space-y-3">
+              <div className="skeleton h-5 w-2/3 rounded" />
+              <div className="flex h-48 w-full items-center justify-center rounded border border-dashed border-ink/15 bg-ink/[0.02]">
+                <div className="flex flex-col items-center gap-3">
+                  <span className="loading loading-spinner loading-md text-moss/50" />
+                  <span className="text-xs text-ink/35">正在分析数据…</span>
+                </div>
               </div>
+              <div className="skeleton h-4 w-1/3 rounded" />
             </div>
-            <div className="skeleton h-4 w-1/3 rounded" />
-          </div>
+          </BorderBeam>
         )}
 
         {!isUser && <StepRail steps={message.steps} />}

@@ -5,6 +5,7 @@
  * 改用 DaisyUI menu 组件（menu-active 激活态自动用品牌主色 moss）。
  */
 import { MessageSquare, Trash2 } from "lucide-react";
+import { BorderBeam } from "border-beam";
 import { useState } from "react";
 import { cn } from "../lib/format";
 import type { Conversation } from "../types/agent";
@@ -62,6 +63,29 @@ export function ConversationList({
     <ul className="menu menu-vertical gap-0.5 px-0 py-0">
       {conversations.map((conv) => {
         const isActive = conv.id === activeId;
+        const activeBtn = (
+          <button
+            type="button"
+            onClick={() => onSelect(conv.id)}
+            className={cn(
+              "w-full justify-start gap-2 py-2.5 text-left text-sm",
+              isActive ? "menu-active" : "hover:bg-ink/5",
+            )}
+          >
+            <MessageSquare
+              className={cn("mt-0.5 h-4 w-4 shrink-0", isActive ? "text-moss" : "text-ink/35")}
+              aria-hidden="true"
+            />
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-xs font-medium leading-5">
+                {conv.title}
+              </div>
+              <div className="text-[11px] text-ink/40">
+                {relativeTime(conv.updatedAt)}
+              </div>
+            </div>
+          </button>
+        );
         return (
           <li
             key={conv.id}
@@ -69,27 +93,13 @@ export function ConversationList({
             onMouseEnter={() => setHoverId(conv.id)}
             onMouseLeave={() => setHoverId(null)}
           >
-            <button
-              type="button"
-              onClick={() => onSelect(conv.id)}
-              className={cn(
-                "w-full justify-start gap-2 py-2.5 text-left text-sm",
-                isActive ? "menu-active" : "hover:bg-ink/5",
-              )}
-            >
-              <MessageSquare
-                className={cn("mt-0.5 h-4 w-4 shrink-0", isActive ? "text-moss" : "text-ink/35")}
-                aria-hidden="true"
-              />
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-xs font-medium leading-5">
-                  {conv.title}
-                </div>
-                <div className="text-[11px] text-ink/40">
-                  {relativeTime(conv.updatedAt)}
-                </div>
-              </div>
-            </button>
+            {isActive ? (
+              <BorderBeam size="md" colorVariant="ocean" theme="light" strength={0.45} className="rounded-md">
+                {activeBtn}
+              </BorderBeam>
+            ) : (
+              activeBtn
+            )}
             {hoverId === conv.id && (
               <button
                 type="button"

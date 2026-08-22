@@ -7,6 +7,7 @@
  * 改用 DaisyUI collapse + badge-outline。
  */
 import { Database } from "lucide-react";
+import { BorderBeam } from "border-beam";
 import type { TableSource } from "../types/agent";
 
 type SourceCardProps = {
@@ -25,7 +26,8 @@ export function SourceCard({ columnSources }: SourceCardProps) {
   if (!hasSources) return null;
 
   return (
-    <div className="collapse collapse-arrow mt-4 rounded-lg border border-ink/10 bg-white/70">
+    <BorderBeam size="md" colorVariant="ocean" theme="light" strength={0.35} className="mt-4 rounded-lg">
+      <div className="collapse collapse-arrow rounded-lg border border-ink/10 bg-white/70">
       <input type="checkbox" className="peer" />
       <div className="collapse-title flex items-center gap-2 text-sm text-ink/65">
         <Database className="h-4 w-4 shrink-0 text-moss" aria-hidden="true" />
@@ -93,6 +95,7 @@ export function SourceCard({ columnSources }: SourceCardProps) {
           })}
         </div>
       </div>
-    </div>
+      </div>
+    </BorderBeam>
   );
 }

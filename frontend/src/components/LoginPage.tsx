@@ -5,6 +5,7 @@
 import { BarChart3, KeyRound, User } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { login } from "../lib/authApi";
+import { BorderBeam } from "border-beam";
 
 type LoginPageProps = {
   onSuccess: () => void;
@@ -95,14 +96,16 @@ export default function LoginPage({ onSuccess }: LoginPageProps) {
               />
             </label>
 
-            <button
-              type="submit"
-              disabled={!canSubmit}
-              className="btn btn-primary mt-2 h-11 w-full border-none text-sm font-semibold text-primary-content"
-            >
-              {submitting && <span className="loading loading-spinner loading-sm" aria-hidden="true" />}
-              {submitting ? "登录中…" : "登 录"}
-            </button>
+            <BorderBeam size="md" colorVariant="ocean" theme="light" strength={0.45} className="rounded-lg">
+              <button
+                type="submit"
+                disabled={!canSubmit}
+                className="btn btn-primary mt-2 h-11 w-full border-none text-sm font-semibold text-primary-content"
+              >
+                {submitting && <span className="loading loading-spinner loading-sm" aria-hidden="true" />}
+                {submitting ? "登录中…" : "登 录"}
+              </button>
+            </BorderBeam>
           </form>
 
           <p className="text-center text-xs text-ink/40">登录即代表你有权限访问该问数系统</p>

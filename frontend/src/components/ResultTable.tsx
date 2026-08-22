@@ -4,6 +4,7 @@
  * 改用 DaisyUI card + table-zebra + table-pin-rows（固定表头）
  */
 import { Database, FileJson } from "lucide-react";
+import { BorderBeam } from "border-beam";
 import { normalizeRows } from "../lib/chartDetector";
 import { columnLabel } from "../lib/fieldLabels";
 
@@ -27,7 +28,8 @@ export function ResultTable({ data }: { data: unknown }) {
   }
 
   return (
-    <section className="card card-bordered mt-4 bg-white/70 shadow-line">
+    <BorderBeam size="md" colorVariant="ocean" theme="light" strength={0.4} className="mt-4 rounded-lg">
+      <section className="card card-bordered overflow-hidden bg-white/70 shadow-line">
       <div className="flex items-center justify-between border-b border-ink/10 px-4 py-3">
         <div className="flex items-center gap-2 text-sm font-semibold text-ink">
           <Database className="h-4 w-4 text-moss" aria-hidden="true" />
@@ -60,6 +62,7 @@ export function ResultTable({ data }: { data: unknown }) {
           </tbody>
         </table>
       </div>
-    </section>
+      </section>
+    </BorderBeam>
   );
 }

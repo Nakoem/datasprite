@@ -3,6 +3,7 @@
  * 按 LangGraph 节点拓扑展示各步骤状态（17 节点，与后端 graph.py 对齐）
  */
 import { Check, Circle, LoaderCircle, RotateCw, X } from "lucide-react";
+import { BorderBeam } from "border-beam";
 import { cn } from "../lib/format";
 import type { ProgressStatus, StepState } from "../types/agent";
 
@@ -121,43 +122,55 @@ function FlowNodeCard({ node, status }: { node: FlowNode; status: FlowStatus }) 
   const width = node.w ?? 156;
   const dashedPending = node.dashed && status === "pending";
 
+  const card = (
+    <div
+      className={cn(
+        "flex h-12 items-center gap-2.5 rounded-md border px-3 transition",
+        status === "pending" &&
+          (dashedPending
+            ? "border-dashed border-ink/20 bg-white/40 text-ink/40"
+            : "border-ink/10 bg-white/55 text-ink/45"),
+        status === "running" && "border-brass/45 bg-brass/15 text-ink",
+        status === "retry" && "border-brass/45 bg-brass/15 text-ink",
+        status === "success" && "border-moss/25 bg-moss/10 text-ink",
+        status === "error" && "border-tomato/35 bg-tomato/10 text-tomato",
+      )}
+    >
+      <span
+        className={cn(
+          "grid h-6 w-6 shrink-0 place-items-center rounded-full",
+          status === "pending" && "bg-ink/5 text-ink/35",
+          status === "running" && "bg-brass/20 text-brass",
+          status === "retry" && "bg-brass/20 text-brass",
+          status === "success" && "bg-moss/15 text-moss",
+          status === "error" && "bg-tomato/15 text-tomato",
+        )}
+      >
+        <NodeIcon status={status} />
+      </span>
+      <span className="flex min-w-0 flex-1 flex-col leading-tight">
+        <span className="truncate text-[13px] font-semibold">{node.step}</span>
+        {node.eng && (
+          <span className="truncate font-mono text-[10px] text-ink/40">{node.eng}</span>
+        )}
+      </span>
+    </div>
+  );
+
+  const active = status === "running" || status === "retry";
+
   return (
     <div
       className="absolute -translate-x-1/2"
       style={{ left: node.x, top: node.y, width }}
     >
-      <div
-        className={cn(
-          "flex h-12 items-center gap-2.5 rounded-md border px-3 transition",
-          status === "pending" &&
-            (dashedPending
-              ? "border-dashed border-ink/20 bg-white/40 text-ink/40"
-              : "border-ink/10 bg-white/55 text-ink/45"),
-          status === "running" && "border-brass/45 bg-brass/15 text-ink",
-          status === "retry" && "border-brass/45 bg-brass/15 text-ink",
-          status === "success" && "border-moss/25 bg-moss/10 text-ink",
-          status === "error" && "border-tomato/35 bg-tomato/10 text-tomato",
-        )}
-      >
-        <span
-          className={cn(
-            "grid h-6 w-6 shrink-0 place-items-center rounded-full",
-            status === "pending" && "bg-ink/5 text-ink/35",
-            status === "running" && "bg-brass/20 text-brass",
-            status === "retry" && "bg-brass/20 text-brass",
-            status === "success" && "bg-moss/15 text-moss",
-            status === "error" && "bg-tomato/15 text-tomato",
-          )}
-        >
-          <NodeIcon status={status} />
-        </span>
-        <span className="flex min-w-0 flex-1 flex-col leading-tight">
-          <span className="truncate text-[13px] font-semibold">{node.step}</span>
-          {node.eng && (
-            <span className="truncate font-mono text-[10px] text-ink/40">{node.eng}</span>
-          )}
-        </span>
-      </div>
+      {active ? (
+        <BorderBeam size="md" colorVariant="ocean" theme="light" strength={0.5} className="h-12 rounded-md">
+          {card}
+        </BorderBeam>
+      ) : (
+        card
+      )}
     </div>
   );
 }
