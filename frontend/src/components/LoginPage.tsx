@@ -5,7 +5,7 @@
 import { BarChart3, KeyRound, User } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { login } from "../lib/authApi";
-import { Liquid } from "liquid-gooey";
+import { LiquidDroplets } from "./LiquidDroplets";
 
 type LoginPageProps = {
   onSuccess: () => void;
@@ -53,18 +53,8 @@ export default function LoginPage({ onSuccess }: LoginPageProps) {
               <h1 className="text-xl font-semibold tracking-[0.02em] text-ink">问数精灵</h1>
               <p className="mt-1 text-sm text-ink/50">DataSprite Agent · 欢迎回来</p>
             </div>
-            {/* Gooey 液态水滴：紧密相邻的圆点互相黏连成魔法液体 */}
-            <Liquid
-              fill="rgba(94, 120, 85, 0.42)"
-              blur={22}
-              contrast={30}
-              className="flex items-center"
-            >
-              <Liquid.Item className="h-9 w-9 -mx-2 rounded-full bg-moss/60" />
-              <Liquid.Item className="h-9 w-9 -mx-2 rounded-full bg-moss/60" />
-              <Liquid.Item className="h-7 w-7 -mx-2 rounded-full bg-brass/60" />
-              <Liquid.Item className="h-9 w-9 -mx-2 rounded-full bg-moss/60" />
-            </Liquid>
+            {/* 可拖拽液态水滴组 */}
+            <LiquidDroplets />
           </div>
 
           {/* 登录失败提示 */}
