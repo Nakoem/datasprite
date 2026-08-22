@@ -67,7 +67,7 @@ export function LiquidDroplets() {
       {drops.map((d, i) => (
         <Liquid.Item
           key={i}
-          morph={{ shape: true, bounce: 0.6, speed: 1.1 }}
+          morph={{ shape: true, bounce: 0.6, speed: 1.1, contentBlur: 0 }}
           dissolve={{ mix: 0.9 }}
           observe
         >
