@@ -65,7 +65,9 @@ async def semantic_validate(
                     metric_infos, allow_unicode=True, sort_keys=False
                 ),
                 "sql": sql,
-                "current_date": yaml.dump(date_info, allow_unicode=True, sort_keys=False)
+                "current_date": yaml.dump(
+                    date_info, allow_unicode=True, sort_keys=False
+                )
                 if date_info
                 else "（未知）",
             }
