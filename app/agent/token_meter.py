@@ -15,12 +15,19 @@ LLM Token 计量器
 实现细节：
 - 节点名从 on_llm_start 的 metadata["langgraph_node"] 取（LangGraph 自动注入），
   on_llm_end 的 metadata 为 None，所以用 run_id 在两次回调间配对。
-- 经实测（langchain-openai 1.1.12 + qwen3.7-max）：AIMessage.usage_metadata 常为
-  None，token 数在 response.llm_output["token_usage"]（OpenAI 兼容 schema：
-  prompt_tokens / completion_tokens / total_tokens），本类做两端兼容。
+- 经实测（langchain-openai 1.1.12 + qwen3.7-max）：token 数在
+  response.llm_output["token_usage"]（OpenAI 兼容 schema：prompt_tokens /
+  completion_tokens / total_tokens），这是当前的主路径。
+- ⚠️ LLMResult 本身**没有** usage_metadata 字段（实测其字段仅
+  generations / llm_output / run / type），该字段在 generations[i][j].message 上，
+  所以回退路径必须下钻到 AIMessage 去取，不能对 LLMResult 直接 getattr。
+- 取不到 token 时会打 WARNING：静默计 0 会让成本账在无任何报错的情况下悄悄失真，
+  而这本账是用来报价的，必须留痕（换模型 / 改流式 / langchain 升级都可能触发）。
 """
 
 from langchain_core.callbacks import BaseCallbackHandler
+
+from app.core.log import logger
 
 # metadata 缺失时的兜底桶（正常情况不会出现）
 _OTHER = "other"
@@ -56,6 +63,12 @@ class TokenMeter(BaseCallbackHandler):
     def on_llm_end(self, response, *, run_id, parent_run_id=None, **kwargs):
         usage = self._extract_token_usage(response)
         if usage is None:
+            # 不能静默：这次调用的钱真烧了，却记不进账，且不会有任何报错
+            logger.warning(
+                "[token-meter] 提取 token 用量失败，本次 LLM 调用记为 0 | node={} | response_type={}",
+                self._run_nodes.get(run_id, _OTHER),
+                type(response).__name__,
+            )
             return
         input_tokens, output_tokens, total_tokens = usage
         node = self._run_nodes.pop(run_id, _OTHER)
@@ -68,7 +81,10 @@ class TokenMeter(BaseCallbackHandler):
     def _extract_token_usage(response) -> tuple[int, int, int] | None:
         """从回调 response 里提取 (input, output, total)，取不到返回 None。
 
-        优先 llm_output["token_usage"]，兼容 langchain 标准 usage_metadata。
+        路径①（主）：llm_output["token_usage"]，OpenAI 兼容 schema，当前 qwen 走这条。
+        路径②（回退）：generations[i][j].message.usage_metadata，langchain 标准字段。
+        ⚠️ 必须下钻到 AIMessage —— LLMResult 顶层没有 usage_metadata，
+           对它直接 getattr 恒为 None（等于没有回退）。
         """
         llm_output = getattr(response, "llm_output", None)
         if isinstance(llm_output, dict):
@@ -80,13 +96,17 @@ class TokenMeter(BaseCallbackHandler):
                     usage.get("total_tokens") or 0,
                 )
 
-        usage_metadata = getattr(response, "usage_metadata", None)
-        if isinstance(usage_metadata, dict):
-            return (
-                usage_metadata.get("input_tokens") or 0,
-                usage_metadata.get("output_tokens") or 0,
-                usage_metadata.get("total_tokens") or 0,
-            )
+        # 回退：流式调用或部分 provider 只在 AIMessage 上带 usage_metadata
+        for generation_list in getattr(response, "generations", None) or []:
+            for generation in generation_list or []:
+                message = getattr(generation, "message", None)
+                usage_metadata = getattr(message, "usage_metadata", None)
+                if isinstance(usage_metadata, dict):
+                    return (
+                        usage_metadata.get("input_tokens") or 0,
+                        usage_metadata.get("output_tokens") or 0,
+                        usage_metadata.get("total_tokens") or 0,
+                    )
         return None
 
     def summary(self) -> dict:
