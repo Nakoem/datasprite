@@ -69,6 +69,15 @@ DataSprite 是一个基于 NL2SQL 的智能问数系统。用户用自然语言�
 
 ---
 
+## 📸 界面预览
+
+登录页（JWT 鉴权） · 首页（历史会话 / 示例问题 / 问数输入）
+
+![登录页](docs/screenshots/login-page.png)
+![首页](docs/screenshots/dashboard.png)
+
+---
+
 ## ✨ 界面动效
 
 前端用 [border-beam](https://github.com/Jakubantalik/border-beam)（纯 CSS conic-gradient 流光边框）做核心高光点亮，按「交互优先、装饰从轻」分层：
