@@ -27,3 +27,6 @@ class AskResponse(BaseModel):
     column_sources: list[dict] | None = None
     error: str | None = None
     chart_image_base64: str | None = None  # PNG 图表 base64，供飞书等渠道展示
+    token_usage: dict | None = (
+        None  # 全链路 LLM token 消耗：total/input/output + by_node 分桶
+    )

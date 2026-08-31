@@ -17,6 +17,7 @@ from langchain_huggingface import HuggingFaceEndpointEmbeddings
 from app.agent.context import DataAgentContext
 from app.agent.graph import graph  # 无 checkpointer 的默认图（fallback）
 from app.agent.state import DataAgentState
+from app.agent.token_meter import TokenMeter
 from app.core.log import logger
 from app.entities.conversation import Message
 from app.repositories.es.value_es_repository import ValueESRepository
@@ -58,7 +59,11 @@ class QueryService:
         self.compiled_graph = compiled_graph or graph
 
     async def _run_graph(
-        self, query: str, conversation_id: str | None = None, source: str = "web"
+        self,
+        query: str,
+        conversation_id: str | None = None,
+        source: str = "web",
+        meter: TokenMeter | None = None,
     ):
         """内部共享方法：执行 LangGraph 管线，逐段 yield 原始 dict chunk。
 
@@ -66,6 +71,9 @@ class QueryService:
         避免 SSE 序列化/反序列化来回折腾。
 
         source 标记会话来源：web=DataSprite 前端（query），external=外部系统透传（query_sync）。
+
+        meter 为 token 计量器，挂在 graph config 的 callbacks 上，
+        由 query_sync() 传入并在结束汇总；不传时内部创建（不对外上报）。
         """
         if not conversation_id:
             conversation_id = str(uuid.uuid4())
@@ -115,7 +123,13 @@ class QueryService:
         assistant_content = ""
 
         try:
-            astream_config = {"configurable": {"thread_id": conversation_id}}
+            if meter is None:
+                meter = TokenMeter()
+            # LangGraph 会把 config 里的 callbacks 自动下传给图内所有 LLM 调用
+            astream_config = {
+                "configurable": {"thread_id": conversation_id},
+                "callbacks": [meter],
+            }
             async for chunk in self.compiled_graph.astream(
                 input=state,
                 context=context,
@@ -191,12 +205,15 @@ class QueryService:
             "column_sources": None,
             "error": None,
             "chart_image_base64": None,
+            "token_usage": None,
         }
         seen_types: list[str] = []
+        # token 计量器：每请求独立实例（全局单例会并发串账），随后随响应透传给上游
+        meter = TokenMeter()
 
         async def _collect():
             async for chunk in self._run_graph(
-                query, conversation_id=conversation_id, source="external"
+                query, conversation_id=conversation_id, source="external", meter=meter
             ):
                 if not isinstance(chunk, dict):
                     continue
@@ -217,32 +234,36 @@ class QueryService:
 
         timeout = app_config.llm.query_timeout
         try:
-            await asyncio.wait_for(_collect(), timeout=timeout)
-        except asyncio.TimeoutError:
-            result["error"] = f"查询超时（{timeout}秒），请简化问题后重试"
-            return result
-        except Exception as e:
-            result["error"] = str(e)
-
-        # 有数据时尝试生成图表
-        if result["data"] and result["error"] is None:
             try:
-                from app.services.chart_service import generate_chart
+                await asyncio.wait_for(_collect(), timeout=timeout)
+            except asyncio.TimeoutError:
+                result["error"] = f"查询超时（{timeout}秒），请简化问题后重试"
+                return result
+            except Exception as e:
+                result["error"] = str(e)
 
-                chart_b64 = generate_chart(result["data"], query)
-                if chart_b64:
-                    result["chart_image_base64"] = chart_b64
-            except Exception:
-                logger.exception("query_sync 图表生成异常")
+            # 有数据时尝试生成图表
+            if result["data"] and result["error"] is None:
+                try:
+                    from app.services.chart_service import generate_chart
 
-        if result["sql"] is None and result["error"] is None:
-            logger.warning(
-                "query_sync 未拿到数据 | query={} | seen_types={}",
-                query[:100],
-                seen_types,
-            )
+                    chart_b64 = generate_chart(result["data"], query)
+                    if chart_b64:
+                        result["chart_image_base64"] = chart_b64
+                except Exception:
+                    logger.exception("query_sync 图表生成异常")
 
-        return result
+            if result["sql"] is None and result["error"] is None:
+                logger.warning(
+                    "query_sync 未拿到数据 | query={} | seen_types={}",
+                    query[:100],
+                    seen_types,
+                )
+
+            return result
+        finally:
+            # 超时/异常时 LLM 已真实烧掉的 token 也一并上报（半程也是成本）
+            result["token_usage"] = meter.summary()
 
     async def query(self, query: str, conversation_id: str | None = None):
         """执行一次问数工作流，并逐段产出 SSE 消息。

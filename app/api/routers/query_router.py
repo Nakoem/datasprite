@@ -68,4 +68,5 @@ async def ask_handler(
         column_sources=result.get("column_sources"),
         error=result.get("error"),
         chart_image_base64=result.get("chart_image_base64"),
+        token_usage=result.get("token_usage"),
     )

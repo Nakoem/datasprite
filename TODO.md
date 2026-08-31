@@ -2,7 +2,7 @@
 
 > 功能进度追踪。项目架构/命令看 [CLAUDE.md](CLAUDE.md)。
 
-## 进度：30 / 36
+## 进度：31 / 37
 
 ## 作者建议（7项）
 
@@ -30,6 +30,7 @@
 | 35 | 🔧 评测结果集对比优化（时间维度键规范化，修 q12 月度标签格式漂移盲区） | ❌ | ✅ 已完 |
 | 36 | 🔄 评测器多轮上下文支持（评测集可带前置上下文，纳入「那华北区呢」等多轮指代样本，2026-08-06 dify 实测沉淀） | ❌ | ✅ 已完 |
 | 37 | 🤖 评测候选 AI 审核 + 一键晋升闭环（自动捕获 → LLM 判 promote/filter/defer + 独立SQL硬验证防自评陷阱 → `--apply` 一键晋升可 git 回退） | ❌ | ✅ 已完 |
+| 38 | 💰 全链路 Token 归集（一次 /api/ask 到底烧多少 token → 随响应透传给 Dify/飞书，补上成本核算最大盲区）| ❌ | ✅ 已完 |
 
 ## nanobot 启发（3项）🆕
 
@@ -88,6 +89,94 @@ DataSprite v1.0  (现在)     →  DataSprite v2.0  (未来)
 | 30 | 🎬 Checkpoint 回放面板（时间线拖拽 + State Diff + 逐帧回放，debug 用）→ 跟 #27 审计日志一起做，同源数据 | 🎨 回放面板 | ✅ 已完 |
 | 33 | 🔌 封装 API 服务（FastAPI 壳 → `/ask` 接口 → 返回 SQL + 数据 + AI 摘要，可供 Dify/飞书/钉钉等外部系统调用） | ❌ | ✅ 已完 |
 | 34 | ⏱️ query_sync 整体超时（`asyncio.wait_for` 防 LLM 假死挂起） | ❌ | ✅ 已完 |
+
+---
+
+## 💰 #38 全链路 Token 归集 — 详细规格（2026-08-31 立项）
+
+> **来源**：feishu-bridge 侧做成本核算时发现的盲区。跨 3 个服务，DataSprite 是主战场。
+
+### 一、问题是什么
+
+飞书智能客服的问数链路是 `飞书 → feishu-bridge → Dify → DataSprite`。
+feishu-bridge 记的 token 数**照抄 Dify 返回的 `usage.total_tokens`**，而
+**Dify 的 HTTP 请求节点是个黑盒 —— 它不知道 DataSprite 内部烧了多少**。
+
+**实测铁证**（Dify `workflow_node_executions`，run `37a22382`，2026-08-15）：
+
+| 节点 | node_type | token | 耗时 |
+|---|---|---:|---:|
+| LLM 2（结果解读） | llm | 32,656 | 18.3s |
+| 问题分类器 2 | question-classifier | 1,891 | 15.5s |
+| 参数提取器 | parameter-extractor | 1,607 | 14.4s |
+| 问题分类器 | question-classifier | 1,534 | 7.3s |
+| **HTTP 请求（调 DataSprite）** | http-request | **0** | **88.4s** ⚠️ |
+| 合计 | | **37,688** | |
+
+**那 88.4 秒里 DataSprite 跑了 6-7 次 LLM 调用，token 无人记录。**
+本仓库自有代码 token 记账 = **0 处**（`grep token --include=*.py app` 只命中 .venv 第三方库），
+LLM 调用点共 **13 处**（`app/agent/nodes/` 下 classify_intent / generate_sql / correct_sql /
+filter_table / filter_metric / recall_column / recall_metric / recall_value / dream 等）。
+
+> 结论：飞书那边记的「问数一次 37,688 token」是**低估值**，真实成本未知。
+> 不补这个洞，任何成本核算/报价都是假的。
+
+### 二、方案（三层，只做①就有 80% 价值）
+
+```
+① DataSprite 自己数   一次 /api/ask 累计 token（input/output/total）  ← 本项目主体
+② 随响应透传          /api/ask 响应加 token_usage 字段 → Dify → feishu-bridge
+③ 成本落账            feishu-bridge /stats 汇总真实总量 × 单价 = 钱
+```
+
+### 三、技术方案（已勘察，改动很小）
+
+**关键发现：LLM 有单一入口，不必改 13 处。**
+
+- `app/agent/llm.py` 集中用 `init_chat_model(model_provider="openai")` 建实例，
+  所有节点 `from app.agent.llm import llm`，**LangChain 的 usage 数据本来就在，只是没人收**
+- `app/services/query_service.py:118` 已有 `astream_config = {"configurable": {"thread_id": ...}}`，
+  第 119-123 行 `self.compiled_graph.astream(..., config=astream_config, ...)`
+  → **LangGraph 会把 config 里的 callbacks 自动下传给图内所有 LLM 调用**
+
+**推荐实现**：
+
+1. 新建 `app/agent/token_meter.py` —— 一个 `BaseCallbackHandler` 子类，
+   `on_llm_end` 里从 `response.llm_output["token_usage"]` 或 `AIMessage.usage_metadata`
+   累加 `input_tokens / output_tokens / total_tokens`，并按节点名分桶（便于定位大头）
+   > ⚠️ **必须每请求 new 一个实例**（不能全局单例，否则并发串账）
+2. `query_service.py:118` 的 `astream_config` 加 `"callbacks": [meter]`（**一行**）
+3. `_run_graph` 跑完后把 `meter.summary()` 塞进返回结果
+4. `query_sync`（:177）/ `/api/ask` 响应加字段：
+   ```json
+   {"token_usage": {"total": 28450, "input": 24100, "output": 4350,
+                    "by_node": {"generate_sql": 8200, "correct_sql": 3100, ...}}}
+   ```
+
+**第②层的省事路径（复用现有暗管）**：
+Dify 问数分支已在回答尾部拼 `<!--DATA-->{"sql": ..., "chart_image_base64": ...}<!--/DATA-->`，
+feishu-bridge 早就在解析它。**只需把 `token_usage` 加进这个 JSON**，零新协议
+（与转人工 `<!--HANDOFF-->` 标记同一套路）。
+
+### 四、验收标准
+
+- [x] 跑一次 `/api/ask`，响应里有 `token_usage.total` 且 > 0
+  - ✅ **2026-08-31 实测**：单值查询 14,210 / 明细查询 19,427
+- [x] `by_node` 能定位到哪个节点最贵（预期 generate_sql / correct_sql 是大头）
+  - ✅ 实测大头是 **filter_table（37%！）**，不是 generate_sql —— 表筛选喂了全量候选表 YAML，比 SQL 生成还贵；correct_sql 本次未触发（无修正路径）
+- [x] **并发验证**：两个请求同时跑，两边 token 数互不污染（证明不是全局单例）
+  - ✅ 双请求并发实测：各自 9 个节点桶、总数 14,210 ≠ 19,427，无串账
+- [x] 单值查询 vs 明细查询 的 token 差异被量化（feishu-bridge 侧实测 Dify 部分是 8k vs 36k，差 4.4 倍）
+  - ✅ DataSprite 内部为 19,427 / 14,210 = **1.37x**（明细侧 summarize_result +3.5x 是主因：1056 → 3659）
+- [ ] 与阿里云百炼控制台的实际用量对得上（±10% 以内）
+  - 🕐 机制上用 API 服务端返回的 `llm_output.token_usage`（服务端计数，非本地估算），理论上精确匹配，待宝上控制台核对一次
+
+### 五、做完之后回 feishu-bridge 做②③
+
+feishu-bridge 侧对应条目见该仓库 `智能客服-TODO.md` →「🏭 生产运营风险清单」。
+届时可算出这句面试用的话：**「每次问答 ¥X，100 人公司每月 ¥Y，相当于 0.0Z 个客服人力」**。
+
+---
 
 ## 优先级
 
