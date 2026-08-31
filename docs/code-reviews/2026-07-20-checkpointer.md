@@ -6,7 +6,7 @@
 
 ## 改动文件
 
-| 文件 | 改动 | 
+| 文件 | 改动 |
 |:---|:---|
 | `app/agent/checkpointer.py` (NEW) | MySQLSaver 类，~500行 |
 | `app/agent/graph.py` | 模块级 graph → compile_graph(checkpointer=None) |

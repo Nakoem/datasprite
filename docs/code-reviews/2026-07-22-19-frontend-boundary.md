@@ -1,7 +1,7 @@
 # Code Review — #19 前端边界态收尾
 
-**日期**：2026-07-22  
-**Commit**：4f23ba6  
+**日期**：2026-07-22
+**Commit**：4f23ba6
 **审查者**：雪玲（code-review skill）
 
 ## 改动摘要
