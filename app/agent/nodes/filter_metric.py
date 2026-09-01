@@ -5,13 +5,13 @@
 过滤后的指标会进入 SQL 生成上下文，帮助模型遵循正确的业务口径
 """
 
-import yaml
 from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.prompts import PromptTemplate
 from langgraph.runtime import Runtime
 
 from app.agent.context import DataAgentContext
 from app.agent.llm import llm
+from app.agent.nodes._schema_compact import compact_metric_infos
 from app.agent.state import DataAgentState, MetricInfoState
 from app.core.log import logger
 from app.prompt.prompt_loader import load_prompt
@@ -38,12 +38,11 @@ async def filter_metric(state: DataAgentState, runtime: Runtime[DataAgentContext
         # LCEL 管道：填充提示词 -> 调用模型 -> 解析 JSON
         chain = prompt | llm | output_parser
 
+        compacted_yaml = compact_metric_infos(metric_infos)
         result = await chain.ainvoke(
             {
                 "query": query,
-                "metric_infos": yaml.dump(
-                    metric_infos, allow_unicode=True, sort_keys=False
-                ),
+                "metric_infos": compacted_yaml,
             }
         )
         # 模型偶发会返回 dict/str 而不是数组（如 {"metrics": [...]}）。
@@ -63,6 +62,7 @@ async def filter_metric(state: DataAgentState, runtime: Runtime[DataAgentContext
                 if metric_info["name"] in result
             ]
 
+        logger.info("指标信息瘦身（#39）：YAML 输入压缩到 {} 字符", len(compacted_yaml))
         logger.info(
             f"过滤后的指标信息：{[filtered_metric_info['name'] for filtered_metric_info in filtered_metric_infos]}"
         )

@@ -5,13 +5,13 @@
 这里让大模型只返回“保留哪些表和字段”的选择结果，真正的结构裁剪仍由程序完成
 """
 
-import yaml
 from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.prompts import PromptTemplate
 from langgraph.runtime import Runtime
 
 from app.agent.context import DataAgentContext
 from app.agent.llm import llm
+from app.agent.nodes._schema_compact import compact_table_infos
 from app.agent.state import DataAgentState, TableInfoState
 from app.core.log import logger
 from app.prompt.prompt_loader import load_prompt
@@ -38,12 +38,13 @@ async def filter_table(state: DataAgentState, runtime: Runtime[DataAgentContext]
         # LCEL 管道：填充提示词 -> 调用模型 -> 解析 JSON
         chain = prompt | llm | output_parser
 
+        # #39 瘦身：examples 只留 2 个+ 描述截断，cheap 不降准（原全量 YAML 实测占
+        # 整链路 30% token，其中大部分是千级 examples 值）
+        compacted_yaml = compact_table_infos(table_infos)
         result = await chain.ainvoke(
             {
                 "query": query,
-                "table_infos": yaml.dump(
-                    table_infos, allow_unicode=True, sort_keys=False
-                ),
+                "table_infos": compacted_yaml,
             }
         )
         # 模型偶发会返回 list/str 而不是 dict（如 {"tables": [...]}）。
@@ -71,6 +72,10 @@ async def filter_table(state: DataAgentState, runtime: Runtime[DataAgentContext]
                     ]
                     filtered_table_infos.append(table_info)
 
+        logger.info(
+            "表信息瘦身（#39）：YAML 输入压缩到 {} 字符",
+            len(compacted_yaml),
+        )
         logger.info(
             f"过滤后的表信息：{[filtered_table_info['name'] for filtered_table_info in filtered_table_infos]}"
         )
