@@ -26,6 +26,11 @@ _ALIAS_MAX = 20
 
 
 def _truncate(value, max_len: int) -> str:
+    """截断长文本。None 视作空串——元数据表的 description/alias 在库里可为 NULL
+    （见 app/models/column_info.py、table_info.py、metric_info.py 的 `| None` 声明），
+    不处理会把 None 渲染成字面量 "None" 塞进提示词。"""
+    if value is None:
+        return ""
     s = str(value)
     if len(s) <= max_len:
         return s
@@ -37,20 +42,22 @@ def compact_table_infos(table_infos: list[TableInfoState]) -> str:
     compacted = [
         {
             **table_info,
-            "description": _truncate(table_info.get("description", ""), _DESC_MAX),
+            "description": _truncate(table_info.get("description"), _DESC_MAX),
             "columns": [
                 {
                     "name": column["name"],
                     "type": column["type"],
                     "role": column["role"],
                     # 真实样例值：最多 2 个且截断——name/type/role 才是语义主体
+                    # ⚠️ 一律用 `or []` 而非 .get(k, [])：ColumnInfoState 是显式构造的，
+                    #    键一定存在，默认值不生效；值为 None 时迭代会 TypeError
                     "examples": [
                         _truncate(v, _VALUE_MAX)
-                        for v in (column.get("examples", []) or [])[:_EXAMPLE_LIMIT]
+                        for v in (column.get("examples") or [])[:_EXAMPLE_LIMIT]
                     ],
-                    "description": _truncate(column.get("description", ""), _DESC_MAX),
+                    "description": _truncate(column.get("description"), _DESC_MAX),
                     "alias": [
-                        _truncate(a, _ALIAS_MAX) for a in column.get("alias", [])
+                        _truncate(a, _ALIAS_MAX) for a in (column.get("alias") or [])
                     ],
                 }
                 for column in table_info["columns"]
@@ -66,8 +73,10 @@ def compact_metric_infos(metric_infos: list[MetricInfoState]) -> str:
     compacted = [
         {
             **metric_info,
-            "description": _truncate(metric_info.get("description", ""), _DESC_MAX),
-            "alias": [_truncate(a, _ALIAS_MAX) for a in metric_info.get("alias", [])],
+            "description": _truncate(metric_info.get("description"), _DESC_MAX),
+            "alias": [
+                _truncate(a, _ALIAS_MAX) for a in (metric_info.get("alias") or [])
+            ],
         }
         for metric_info in metric_infos
     ]
