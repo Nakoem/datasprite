@@ -79,6 +79,12 @@ export default function App() {
   const [draft, setDraft] = useState("");
   const [activeController, setActiveController] = useState<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  // 粘底跟随：默认跟随最新内容；用户手动往上滑则暂停，滑回底部附近自动恢复。
+  // ⚠️ 判断依据用「滚动方向」而不是「距底部距离」——平滑滚动（behavior:"smooth"）
+  // 过程中会持续触发 onScroll，动画刚开始时距底部还很远，只看距离会把它误判成
+  // 「用户上滑」，之后就再也不跟随了。
+  const stickToBottomRef = useRef(true);
+  const lastScrollTopRef = useRef(0);
 
   // 登录鉴权
   const [authenticated, setAuthenticated] = useState<boolean>(() => Boolean(getToken()));
@@ -160,16 +166,39 @@ export default function App() {
     clearConversation();
   };
 
+  /**
+   * 记录用户滚动意图：
+   *   往上滑 → 停止自动跟随（尊重用户此刻在看的内容）
+   *   回到底部 80px 内 → 恢复自动跟随
+   */
+  const handleScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const top = el.scrollTop;
+    const scrolledUp = top < lastScrollTopRef.current - 2; // 2px 抖动容差
+    lastScrollTopRef.current = top;
+    if (scrolledUp) {
+      stickToBottomRef.current = false;
+      return;
+    }
+    const distanceToBottom = el.scrollHeight - top - el.clientHeight;
+    if (distanceToBottom < 80) stickToBottomRef.current = true;
+  };
+
   useEffect(() => {
-    scrollRef.current?.scrollTo({
-      top: scrollRef.current.scrollHeight,
-      behavior: "smooth",
-    });
+    // 执行流程里每个节点完成都会更新 messages；用户若正往上看，别把他拽回底部
+    if (!stickToBottomRef.current) return;
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
   const startQuery = async (rawQuery = draft) => {
     const query = rawQuery.trim();
     if (!query || isStreaming) return;
+
+    // 主动提问 → 无论之前滑到哪，都回到底部并恢复跟随
+    stickToBottomRef.current = true;
 
     // 首次查询生成会话 ID
     const cid = conversationId ?? makeId();
@@ -292,6 +321,7 @@ export default function App() {
 
   const clearConversation = () => {
     if (isStreaming) return;
+    stickToBottomRef.current = true; // 新会话：重新开始跟随
     setConversationId(null);
     setMessages([]);
     setDraft("");
@@ -301,6 +331,7 @@ export default function App() {
   /** 加载历史会话 */
   const loadConversation = useCallback(async (id: string) => {
     if (isStreaming) return;
+    stickToBottomRef.current = true; // 切换会话：从头回到底部，别停在上一会话的滚动位置
     try {
       const detail = await fetchConversation(id);
       const loaded: ChatMessage[] = detail.messages.map((msg) => ({
@@ -551,7 +582,7 @@ export default function App() {
             </div>
           </header>
 
-          <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain scrollbar-hide">
+          <div ref={scrollRef} onScroll={handleScroll} className="min-h-0 flex-1 overflow-y-auto overscroll-contain scrollbar-hide">
             {view === "chat" && (
               messages.length === 0 ? (
                 <EmptyState examples={examples} onUseExample={(example) => setDraft(example)} />
