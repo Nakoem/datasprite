@@ -57,7 +57,7 @@ DataSprite 是一个基于 NL2SQL 的智能问数系统。用户用自然语言�
 
 | 类别 | 技术 |
 |:---|:---|
-| 🧠 大模型 | qwen3.7-max（通义千问） |
+| 🧠 大模型 | qwen3.8-max-0902（通义千问） |
 | 🔢 Embedding | BGE-large-zh-v1.5（1024维） |
 | 🔍 向量检索 | Qdrant（HNSW 索引） |
 | 📄 全文检索 | Elasticsearch（IK 中文分词） |

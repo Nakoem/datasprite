@@ -104,7 +104,7 @@ classify_intent  (LLM 意图分类：问数 / 闲聊 / 模糊)
 
 ## LLM 与提示词
 
-- 模型经 `app/agent/llm.py` 单例初始化：`init_chat_model` + OpenAI 兼容协议，接阿里云 DashScope（qwen3.7-max），`temperature=0` 保稳定
+- 模型经 `app/agent/llm.py` 单例初始化：`init_chat_model` + OpenAI 兼容协议，接阿里云 DashScope（qwen3.8-max-0902），`temperature=0` 保稳定
 - 提示词是 `prompts/*.prompt` 纯文本文件，通过 `app/prompt/prompt_loader.py` 加载 —— 改提示词直接改这些文件，别硬编码进节点
 
 ## 数据模型
