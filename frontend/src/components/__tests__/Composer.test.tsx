@@ -27,14 +27,14 @@ describe("Composer", () => {
   it("渲染 textarea 和发送按钮", () => {
     renderComposer();
     expect(
-      screen.getByPlaceholderText("问一个电商数据问题..."),
+      screen.getByPlaceholderText("问一个数据查询问题..."),
     ).toBeInTheDocument();
     expect(screen.getByLabelText("发送")).toBeInTheDocument();
   });
 
   it("回车提交时调用 onSubmit，不换行", async () => {
     const { props } = renderComposer({ value: "统计销售" });
-    const textarea = screen.getByPlaceholderText("问一个电商数据问题...");
+    const textarea = screen.getByPlaceholderText("问一个数据查询问题...");
 
     await userEvent.type(textarea, "{Enter}");
 
@@ -44,7 +44,7 @@ describe("Composer", () => {
   it("Shift+Enter 换行，不提交", async () => {
     const user = userEvent.setup();
     const { props } = renderComposer({ value: "统计销售" });
-    const textarea = screen.getByPlaceholderText("问一个电商数据问题...");
+    const textarea = screen.getByPlaceholderText("问一个数据查询问题...");
 
     await user.type(textarea, "{Shift>}{Enter}{/Shift}");
 

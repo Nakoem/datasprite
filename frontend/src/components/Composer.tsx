@@ -65,7 +65,7 @@ export function Composer({
                         onFocus={() => setFocused(true)}
                         onBlur={() => setFocused(false)}
                         rows={1}
-                        placeholder="问一个电商数据问题..."
+                        placeholder="问一个数据查询问题..."
                         className="max-h-36 min-h-11 flex-1 resize-none bg-transparent px-2 py-3 text-[15px] leading-6 text-ink outline-none placeholder:text-ink/35"
                     />
                     <button
