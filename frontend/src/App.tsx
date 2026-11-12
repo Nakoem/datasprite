@@ -476,16 +476,7 @@ export default function App() {
             <span className="ml-auto text-[11px] opacity-50">切换</span>
           </button>
         </div>
-        <button
-          type="button"
-          onClick={handleLogout}
-          disabled={isStreaming}
-          className="btn btn-outline btn-sm mb-3 h-9 w-full border-ink/15 normal-case text-ink/60 hover:border-tomato/40 hover:text-tomato disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
-          退出登录
-        </button>
-        <div className="grid gap-2 text-xs text-ink/55">
+        <div className="mb-3 grid gap-2 text-xs text-ink/55">
           <div className="flex items-center justify-between gap-3">
             <span className="inline-flex items-center gap-2">
               <Server className="h-3.5 w-3.5" aria-hidden="true" />
@@ -501,6 +492,15 @@ export default function App() {
             <span>{completedCount}</span>
           </div>
         </div>
+        <button
+          type="button"
+          onClick={handleLogout}
+          disabled={isStreaming}
+          className="btn btn-outline btn-sm h-9 w-full border-ink/15 normal-case text-ink/60 hover:border-tomato/40 hover:text-tomato disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
+          退出登录
+        </button>
       </div>
     </>
   );
