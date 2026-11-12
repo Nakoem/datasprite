@@ -398,7 +398,7 @@ export default function App() {
             <BarChart3 className="h-5 w-5" aria-hidden="true" />
           </div>
           <div>
-            <div className="text-base font-semibold tracking-[0.02em]">电商问数</div>
+            <div className="text-base font-semibold tracking-[0.02em]">问数助手</div>
             <div className="text-xs text-ink/50">DataSprite Agent</div>
           </div>
         </div>
