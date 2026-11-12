@@ -73,8 +73,8 @@ DataSprite 是一个基于 NL2SQL 的智能问数系统。用户用自然语言�
 
 登录页（JWT 鉴权） · 首页（历史会话 / 示例问题 / 问数输入）
 
-![登录页](docs/screenshots/login-page.png)
-![首页](docs/screenshots/dashboard.png)
+![登录页](docs/screenshots/login-page-v2.png)
+![首页](docs/screenshots/dashboard-v2.png)
 
 ---
 
